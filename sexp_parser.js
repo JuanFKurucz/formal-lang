@@ -1,27 +1,29 @@
+const assert = require('assert');
+
+function test(expression, expected) {
+    assert.deepStrictEqual(
+        JSON.stringify(parse(expression)),
+        JSON.stringify(expected),
+    )
+}
+
 function parse(expression) {
     // TODO: maybe a lexical analysis to check
     // whether each "(" has a matching ")",
     // because our parser somewhat assumes they have
-    return _parse(expression, 0, expression.length);
+    return _parse(expression, 0, expression.length)[0];
 };
 
 function _parse(expression, start, end) {
     let arr = [];
 
-    console.log(`_parse: start ${start}, end ${end}`);
-    console.log(`\texpr: ${expression.slice(start, end + 1)}`);
+    // console.log(`_parse: start ${start}, end ${end}`);
+    // console.log(`\texpr: ${expression.slice(start, end + 1)}`);
 
     let atom = ""; // current atom
     for (let cursor = start; cursor < end; cursor++) {
         const char = expression[cursor];
         switch (char) {
-            case " ":
-                // New space, add current built atom
-                if (atom) {
-                    arr.push(atom);
-                    atom = "";
-                }
-                break;
             case "(":
                 // Find closing ")" and parse recursively. We're not sending the whole
                 // expr but only a portion (which might recursively try to parse again
@@ -29,7 +31,7 @@ function _parse(expression, start, end) {
 
                 // Try to get closing ")" index
                 let closing_index = expression.slice(cursor, end + 1).indexOf(")") // TODO: helper function?
-                console.log(`\tclosing_index ${closing_index}`);
+                // console.log(`\tclosing_index ${closing_index}`);
 
                 // If found, parse portion of expr and append to array
                 if (closing_index > 0) {
@@ -38,9 +40,11 @@ function _parse(expression, start, end) {
                     cursor = closing_index; // Update cursor so we don't parse the same portion again
                 }
                 break;
+            case " ":
+            case "\n":
             case ")":
-                // Closing parenthesis, add
-                // current atom if there's any
+                // On closing parenthesis or space,
+                // add current atom if there's any
                 if (atom) {
                     arr.push(atom);
                     atom = "";
@@ -52,10 +56,8 @@ function _parse(expression, start, end) {
         }
     }
 
-    // console.log(arr);
-
-    // Add any left atom. E.g. "aa" (which is
-    // a valida s-exp)
+    // Add any left atom. E.g. expr "aa" (which
+    // is a valid s-exp)
     if (atom) arr.push(atom);
 
     return arr;
@@ -63,5 +65,37 @@ function _parse(expression, start, end) {
 
 // export { parse };
 
-console.log(JSON.stringify(parse("(aa bb (cc dd (pp)) (ff gg))")));
-console.log(JSON.stringify(parse("aa")));
+test(
+    "aa",
+    "aa"
+)
+test(
+    "(())",
+    [[]]
+);
+test(
+    "1",
+    "1"
+);
+test(
+    "(1)",
+    ["1"]
+);
+test(
+    "(- x1 6)",
+    ['-', "x1", "6"]
+);
+test(
+    "(define (fact n))",
+    ['define', ["fact", "n"]]
+);
+test(
+    `(define
+        (fact n))`,
+    ['define', ["fact", "n"]]
+);
+test(
+    `(define
+        (fact n))`,
+    ['define', ["fact", "n"]]
+);
