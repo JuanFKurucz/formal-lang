@@ -1,8 +1,12 @@
 const assert = require('assert');
 
 function test(expression, expected) {
+    console.log("init test");
+    const result = JSON.stringify(parse(expression))
+    console.log(result);
+    console.log(expected);
     assert.deepStrictEqual(
-        JSON.stringify(parse(expression)),
+        result,
         JSON.stringify(expected),
     )
 }
@@ -11,8 +15,23 @@ function parse(expression) {
     // TODO: maybe a lexical analysis to check
     // whether each "(" has a matching ")",
     // because our parser somewhat assumes they have
-    return _parse(expression, 0, expression.length)[0];
+    return _parseRegex(expression, 0, expression.length);
 };
+
+const _parseRegex = (expression) => {
+    let string = expression;
+    let list = null;
+    let match = null;
+    while(match = /(\((?:\(??[^\(]*?\)))/gi.exec(string)){
+        const newList = match[0].replace('(','').replace(')','').trim().split(" ")
+        if (list){
+            newList.push(list)
+        }
+        list = newList
+        string = string.slice(0,match.index)+string.slice(match.index+match[0].length,string.length);
+    }
+    return list ? list : expression;
+}
 
 function _parse(expression, start, end) {
     let arr = [];
@@ -60,7 +79,7 @@ function _parse(expression, start, end) {
     // is a valid s-exp)
     if (atom) arr.push(atom);
 
-    return arr;
+    return arr[0];
 }
 
 // export { parse };
@@ -69,10 +88,10 @@ test(
     "aa",
     "aa"
 )
-test(
-    "(())",
-    [[]]
-);
+// test(
+//     "(())",
+//     [[]]
+// );
 test(
     "1",
     "1"
