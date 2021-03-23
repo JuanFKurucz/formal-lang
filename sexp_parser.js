@@ -1,8 +1,10 @@
 const assert = require('assert');
+const testWith = "regex";
+
 
 function test(expression, expected) {
     console.log("init test");
-    const result = JSON.stringify(parse(expression))
+    const result = JSON.stringify(parse(expression,testWith))
     console.log(result);
     console.log(expected);
     assert.deepStrictEqual(
@@ -11,11 +13,11 @@ function test(expression, expected) {
     )
 }
 
-function parse(expression) {
+function parse(expression, algorithm = "recursive") {
     // TODO: maybe a lexical analysis to check
     // whether each "(" has a matching ")",
     // because our parser somewhat assumes they have
-    return _parseRegex(expression, 0, expression.length);
+    return (algorithm === "recursive") ? _parse(expression, 0, expression.length)[0] : _parseRegex(expression);
 };
 
 const _parseRegex = (expression) => {
@@ -79,7 +81,7 @@ function _parse(expression, start, end) {
     // is a valid s-exp)
     if (atom) arr.push(atom);
 
-    return arr[0];
+    return arr;
 }
 
 // export { parse };
