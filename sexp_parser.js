@@ -1,5 +1,5 @@
 const assert = require('assert');
-const testWith = "REGEX";
+const testWith = "REGEXP";
 
 const test = (expression, expected) => {
     const result = JSON.stringify(parse(expression,testWith))
@@ -10,14 +10,33 @@ const test = (expression, expected) => {
     )
 }
 
-const _parseRegex = (expression) => {
+const _insertInside = (parent,current,index=0,value=[]) =>{
+    if(!current){
+        parent.push(value);
+    } else {
+        _insertInside(current,current[index],value)
+    }
+}
+
+const _parseRegexp = (expression) => {
     let string = expression;
     let list = null;
     let match = null;
-    while(match = /(\((?:\(??[^\(]*?\)))/gi.exec(string)){
-        const newList = match[0].replace('(','').replace(')','').trim().split(" ")
-        if (list){
-            newList.push(list)
+    while(match = /\(\(??([^\(]*?)\)/g.exec(string)){
+        let newList = [];
+        if (!match[1]){
+            const tmpList = match.input.split("(").filter(x => !x);
+            console.log(tmpList)
+            for(let i=1;i<tmpList.length;i++){
+                _insertInside(newList,newList[0]);
+            }
+            list = newList
+            break;
+        } else {
+            newList = match[1].trim().split(" ");
+            if (list){
+                newList.push(list)
+            }
         }
         list = newList
         string = string.slice(0,match.index)+string.slice(match.index+match[0].length,string.length);
@@ -76,7 +95,7 @@ const _parse = (expression, start, end) => {
 
 const algorithms = {
     "RECURSIVE":_parse,
-    "REGEX":_parseRegex
+    "REGEXP":_parseRegexp
 }
 
 const parse = (expression, algorithm = "RECURSIVE") => {
@@ -101,10 +120,10 @@ test(
     "aa",
     "aa"
 )
-// test(
-//     "(())",
-//     [[]]
-// );
+test(
+    "(())",
+    [[]]
+);
 test(
     "1",
     "1"
