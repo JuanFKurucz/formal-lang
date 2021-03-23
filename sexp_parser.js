@@ -1,24 +1,14 @@
 const assert = require('assert');
-const testWith = "regex";
+const testWith = "REGEX";
 
-
-function test(expression, expected) {
-    console.log("init test");
+const test = (expression, expected) => {
     const result = JSON.stringify(parse(expression,testWith))
-    console.log(result);
-    console.log(expected);
+    console.log(`Result: ${result} Expected: ${JSON.stringify(expected)}`)
     assert.deepStrictEqual(
         result,
         JSON.stringify(expected),
     )
 }
-
-function parse(expression, algorithm = "recursive") {
-    // TODO: maybe a lexical analysis to check
-    // whether each "(" has a matching ")",
-    // because our parser somewhat assumes they have
-    return (algorithm === "recursive") ? _parse(expression, 0, expression.length)[0] : _parseRegex(expression);
-};
 
 const _parseRegex = (expression) => {
     let string = expression;
@@ -35,7 +25,7 @@ const _parseRegex = (expression) => {
     return list ? list : expression;
 }
 
-function _parse(expression, start, end) {
+const _parse = (expression, start, end) => {
     let arr = [];
 
     // console.log(`_parse: start ${start}, end ${end}`);
@@ -83,6 +73,27 @@ function _parse(expression, start, end) {
 
     return arr;
 }
+
+const algorithms = {
+    "RECURSIVE":_parse,
+    "REGEX":_parseRegex
+}
+
+const parse = (expression, algorithm = "RECURSIVE") => {
+    // TODO: maybe a lexical analysis to check
+    // whether each "(" has a matching ")",
+    // because our parser somewhat assumes they have
+    if(!Object.keys(algorithms).includes(algorithm)){
+        throw `Algorithm ${algorithm} is not in the algorithms list`;
+    }
+
+    const result = algorithms[algorithm](expression,0,expression.length)
+    if (algorithm === "RECURSIVE"){
+        return result[0];
+    }
+    return result;
+};
+
 
 // export { parse };
 
