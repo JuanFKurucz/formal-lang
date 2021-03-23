@@ -1,20 +1,50 @@
 const assert = require('assert');
+const testWith = "REGEXP";
 
-function test(expression, expected) {
+const test = (expression, expected) => {
+    const result = JSON.stringify(parse(expression,testWith))
+    console.log(`Result: ${result} Expected: ${JSON.stringify(expected)}`)
     assert.deepStrictEqual(
-        JSON.stringify(parse(expression)),
+        result,
         JSON.stringify(expected),
     )
 }
 
-function parse(expression) {
-    // TODO: maybe a lexical analysis to check
-    // whether each "(" has a matching ")",
-    // because our parser somewhat assumes they have
-    return _parse(expression, 0, expression.length)[0];
-};
+const _insertInside = (parent,current,index=0,value=[]) =>{
+    if(!current){
+        parent.push(value);
+    } else {
+        _insertInside(current,current[index],value)
+    }
+}
 
-function _parse(expression, start, end) {
+const _parseRegexp = (expression) => {
+    let string = expression;
+    let list = null;
+    let match = null;
+    while(match = /\(\(??([^\(]*?)\)/g.exec(string)){
+        let newList = [];
+        if (!match[1]){
+            const tmpList = match.input.split("(").filter(x => !x);
+            console.log(tmpList)
+            for(let i=1;i<tmpList.length;i++){
+                _insertInside(newList,newList[0]);
+            }
+            list = newList
+            break;
+        } else {
+            newList = match[1].trim().split(" ");
+            if (list){
+                newList.push(list)
+            }
+        }
+        list = newList
+        string = string.slice(0,match.index)+string.slice(match.index+match[0].length,string.length);
+    }
+    return list ? list : expression;
+}
+
+const _parse = (expression, start, end) => {
     let arr = [];
 
     // console.log(`_parse: start ${start}, end ${end}`);
@@ -62,6 +92,27 @@ function _parse(expression, start, end) {
 
     return arr;
 }
+
+const algorithms = {
+    "RECURSIVE":_parse,
+    "REGEXP":_parseRegexp
+}
+
+const parse = (expression, algorithm = "RECURSIVE") => {
+    // TODO: maybe a lexical analysis to check
+    // whether each "(" has a matching ")",
+    // because our parser somewhat assumes they have
+    if(!Object.keys(algorithms).includes(algorithm)){
+        throw `Algorithm ${algorithm} is not in the algorithms list`;
+    }
+
+    const result = algorithms[algorithm](expression,0,expression.length)
+    if (algorithm === "RECURSIVE"){
+        return result[0];
+    }
+    return result;
+};
+
 
 // export { parse };
 
