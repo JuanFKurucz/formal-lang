@@ -52,11 +52,11 @@ const checkValidSexp = (expression) => {
     if (count !== 0) throw "Invalid parenthesis";
 }
 
-const parser = (expression) => {
+const parse = (expression) => {
     checkValidSexp(expression);
     const result = _parse(expression,0,expression.length)
     return result.operations[0];
 };
 
 
-module.exports = parser
+module.exports = {parse}

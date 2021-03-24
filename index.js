@@ -1,9 +1,9 @@
 const assert = require('assert');
-const parser = require("./sexp_parser");
+const { parse } = require("./sexp_parser");
 
 const test = (expression, expected) => {
     try {
-        const result = JSON.stringify(parser(expression))
+        const result = JSON.stringify(parse(expression))
         console.log(`Result: ${result} Expected: ${JSON.stringify(expected)}`)
         assert.deepStrictEqual(
             result,
@@ -39,6 +39,10 @@ test(
 test(
     "((1) 2 (3 (4)) 5)",
     [["1"], "2", ["3", ["4"]], "5"]
+);
+test(
+    "((1) 2 (3 (4 and)) 5)",
+    [["1"], "2", ["3", ["4", "and"]], "5"]
 );
 test(
     "(- x1 6)",
