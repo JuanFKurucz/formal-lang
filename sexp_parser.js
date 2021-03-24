@@ -111,6 +111,15 @@ test(
     "(1)",
     ["1"]
 );
+
+test(
+    "(1 2 3 4 5)",
+    ["1", "2", "3", "4", "5"]
+);
+test(
+    "((1) 2 (3 (4)) 5)",
+    [["1"], "2", ["3", ["4"]], "5"]
+);
 test(
     "(- x1 6)",
     ['-', "x1", "6"],
@@ -148,11 +157,11 @@ test(
     "(ab cd", "Invalid parenthesis", "RECURSIVE"
 );
 test(
-    "(ab cd", "Invalid parenthesis", "REGEXP"
+    "(ab cd", "Invalid parenthesis", "RECURSIVE"
 );
 test(
     "ab cd", "Invalid space not in list", "RECURSIVE"
 );
 test(
-    "ab cd", "Invalid space not in list", "REGEXP"
+    "ab cd", "Invalid space not in list", "RECURSIVE"
 );
