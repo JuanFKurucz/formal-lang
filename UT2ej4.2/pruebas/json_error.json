@@ -1,0 +1,17 @@
+{
+    "author: "Venedety",
+    books: [
+        'lo que el viento se llevo',
+        'lo que el viento no se llevo'
+    ],
+    awards: [
+        'oscar',
+        'otro oscar pero con coma al final',
+    ],
+    "key con comillas y espacios"  : {
+
+
+    },
+    null: null
+},
+[1,2,3,4,5]

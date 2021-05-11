@@ -1,0 +1,3 @@
+comment: "// This is a single line comment.\n"
+ws: "\n"
+comment: "/* This is a multi-\n   line comment. */"

@@ -1,0 +1,23 @@
+// An empty object
+{}
+// An object with two properties
+// and a trailing comma
+{
+    width: 1920,
+    height: 1080,
+}
+// Objects can be nested
+{
+    image: {
+        width: 1920,
+        height: 1080,
+        'aspect-ratio': '16: 9',
+    }
+}
+// An array of objects
+[
+    { name: 'Joe', age: 27
+    },
+    { name: 'Jane', age: 32
+    },
+]
