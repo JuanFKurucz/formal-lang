@@ -1,11 +1,11 @@
 {
-    "name": "37",
+    "name": "fa",
     "version": "1.0.0",
     "description": "",
-    "main": "37.js",
+    "main": "index.js",
     "type": "module",
     "scripts": {
-        "start": "node --experimental-modules 37.js",
+        "start": "node --experimental-modules index.js",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "keywords": [],

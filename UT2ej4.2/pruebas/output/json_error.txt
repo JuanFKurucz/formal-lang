@@ -1,0 +1,4 @@
+objStart: "{"
+ws: "\n    "
+string: "\"author: \""
+identifier: "Venedety"
