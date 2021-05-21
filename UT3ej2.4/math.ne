@@ -8,13 +8,19 @@ const lexer = moo.compile({
     ws: { match: /\s+/, lineBreaks: true },
     opSum: { match: /\+/ },
     opSub: { match: /-/ },
+    opEq: { match: /==/ },
+    opNotEq: { match: /!=/ },
+    opLtEq: { match: /<=/ },
+    opLt: { match: /</ },
+    opGtEq: { match: />=/ },
+    opGt: { match: />/ },
     opMult: { match: /\*/ },
     opIntDiv: { match: /\/\// },
     opDiv: { match: /\// },
     opMod: { match: /%/ },
 });
 
-// Hack-ish way to ignora spaces
+// Hack-ish way to ignore spaces
 // props to @Ghabriel: https://github.com/no-context/moo/issues/81#issuecomment-337582515
 // TODO: prettify
 lexer.next = (next => () => {
@@ -26,20 +32,30 @@ lexer.next = (next => () => {
 
 @lexer lexer
 
-# lower precedence
-# a + b
+# arithmetic: a + b
 E -> E %opSum T {% ([num1, , num2]) => (num1 + num2) %}
-# a - b
+# arithmetic: a - b
 E -> E %opSub T {% ([num1, , num2]) => (num1 - num2) %}
+# logic: a == b
+E -> E %opEq T {% ([num1, , num2]) => (num1 == num2) %}
+# logic: a != b
+E -> E %opNotEq T {% ([num1, , num2]) => (num1 != num2) %}
+# logic: a <= b
+E -> E %opLtEq T {% ([num1, , num2]) => (num1 <= num2) %}
+# logic: a < b
+E -> E %opLt T {% ([num1, , num2]) => (num1 < num2) %}
+# logic: a => b
+E -> E %opGtEq T {% ([num1, , num2]) => (num1 >= num2) %}
+# logic: a > b
+E -> E %opGt T {% ([num1, , num2]) => (num1 > num2) %}
 
-# higher precedence
-# a * b
+# arithmetic: a * b
 T -> T %opMult F {% ([num1, , num2]) => (num1 * num2) %}
-# a DIV b -> a // b
+# arithmetic: a // b
 T -> T %opIntDiv F {% ([num1, , num2]) => (Math.floor(num1 / num2)) %}
-# a / b
+# arithmetic: a / b
 T -> T %opDiv F {% ([num1, , num2]) => (num1 / num2) %}
-# a MOD b -> a % b
+# arithmetic: a % b
 T -> T %opMod F {% ([num1, , num2]) => (num1 % num2) %}
 
 E -> T {% ([expr]) => expr %}

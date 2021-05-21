@@ -12,13 +12,19 @@ const lexer = moo.compile({
     ws: { match: /\s+/, lineBreaks: true },
     opSum: { match: /\+/ },
     opSub: { match: /-/ },
+    opEq: { match: /==/ },
+    opNotEq: { match: /!=/ },
+    opLtEq: { match: /<=/ },
+    opLt: { match: /</ },
+    opGtEq: { match: />=/ },
+    opGt: { match: />/ },
     opMult: { match: /\*/ },
     opIntDiv: { match: /\/\// },
     opDiv: { match: /\// },
     opMod: { match: /%/ },
 });
 
-// Hack-ish way to ignora spaces
+// Hack-ish way to ignore spaces
 // props to @Ghabriel: https://github.com/no-context/moo/issues/81#issuecomment-337582515
 // TODO: prettify
 lexer.next = (next => () => {
@@ -31,6 +37,12 @@ var grammar = {
     ParserRules: [
     {"name": "E", "symbols": ["E", (lexer.has("opSum") ? {type: "opSum"} : opSum), "T"], "postprocess": ([num1, , num2]) => (num1 + num2)},
     {"name": "E", "symbols": ["E", (lexer.has("opSub") ? {type: "opSub"} : opSub), "T"], "postprocess": ([num1, , num2]) => (num1 - num2)},
+    {"name": "E", "symbols": ["E", (lexer.has("opEq") ? {type: "opEq"} : opEq), "T"], "postprocess": ([num1, , num2]) => (num1 == num2)},
+    {"name": "E", "symbols": ["E", (lexer.has("opNotEq") ? {type: "opNotEq"} : opNotEq), "T"], "postprocess": ([num1, , num2]) => (num1 != num2)},
+    {"name": "E", "symbols": ["E", (lexer.has("opLtEq") ? {type: "opLtEq"} : opLtEq), "T"], "postprocess": ([num1, , num2]) => (num1 <= num2)},
+    {"name": "E", "symbols": ["E", (lexer.has("opLt") ? {type: "opLt"} : opLt), "T"], "postprocess": ([num1, , num2]) => (num1 < num2)},
+    {"name": "E", "symbols": ["E", (lexer.has("opGtEq") ? {type: "opGtEq"} : opGtEq), "T"], "postprocess": ([num1, , num2]) => (num1 >= num2)},
+    {"name": "E", "symbols": ["E", (lexer.has("opGt") ? {type: "opGt"} : opGt), "T"], "postprocess": ([num1, , num2]) => (num1 > num2)},
     {"name": "T", "symbols": ["T", (lexer.has("opMult") ? {type: "opMult"} : opMult), "F"], "postprocess": ([num1, , num2]) => (num1 * num2)},
     {"name": "T", "symbols": ["T", (lexer.has("opIntDiv") ? {type: "opIntDiv"} : opIntDiv), "F"], "postprocess": ([num1, , num2]) => (Math.floor(num1 / num2))},
     {"name": "T", "symbols": ["T", (lexer.has("opDiv") ? {type: "opDiv"} : opDiv), "F"], "postprocess": ([num1, , num2]) => (num1 / num2)},
