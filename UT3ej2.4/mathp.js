@@ -1,12 +1,12 @@
 const nearley = require("nearley");
 const grammar = require("./math.js");
 const treeify = require('treeify');
-const prettyjson = require('prettyjson');
+// const prettyjson = require('prettyjson');
 
 const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 
 // casos felices
-parser.feed(" 4  +    4      ");
+parser.feed("-(5 + 1)");
 // parser.feed("14*4+5+4");
 // parser.feed("(5+4)*5*(5/5+2)*2");
 // console.log();
