@@ -1,15 +1,17 @@
 {
-  "name": "ut3ej2.4",
-  "version": "1.0.0",
-  "description": "",
-  "main": "mathp.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "nearley": "^2.20.1",
-    "treeify": "^1.1.0"
-  }
+    "name": "ut3ej2.4",
+    "version": "1.0.0",
+    "description": "",
+    "main": "mathp.js",
+    "scripts": {
+        "test": "mocha"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "mocha": "^8.4.0",
+        "nearley": "^2.20.1",
+        "prompt-sync": "^4.2.0",
+        "treeify": "^1.1.0"
+    }
 }
