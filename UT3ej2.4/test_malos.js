@@ -10,12 +10,10 @@ beforeEach(function() {
 
 const evaluate = expr => {
     expr.forEach(e => {
-        const expected = Array.isArray(e) ? e[1] : eval(e);
-        const actual = Array.isArray(e) ? e[0] : e;
-        it(actual, () => {
+        it(e, () => {
             parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-            parser.feed(actual);
-            assert.equal(parser.results[0], expected);
+            parser.feed(e);
+            assert.equal(parser.results[0], eval(e));
         });
     });
 }
@@ -24,8 +22,9 @@ describe('arithmetic', function() {
     expr = ['1 + 1',
         '(1 + 1) * 1 / (1 + 3 * 5) - 5',
         '   (1 +   1) * 1 / (1 + 3 *   5   ) - 5    ',
-        '5 % 2', ['5 + (5 // 2)', 5 + (Math.floor(5 / 2))],
-        ['2 % (5 // 2) + 5 - 3 + 6 + -5*5', 2 % Math.floor(5 / 2) + 5 - 3 + 6 + -5 * 5]
+        '5 % 2',
+        '5 + (5 // 2)',
+        '2 % (5 // 2) + 5 - 3 + 6 + -5*5'
     ];
     evaluate(expr);
 });

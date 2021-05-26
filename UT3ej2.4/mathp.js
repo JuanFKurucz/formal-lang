@@ -3,6 +3,13 @@ const grammar = require("./math.js");
 const lexer = require('./lexer.js');
 const prompt = require('prompt-sync')({ sigint: true });
 
+
+// 1 - 1 == 1 + 5 debería ser 1 - (1 == 1) + 5
+// false
+// 1 - (1 == 1) + 5
+// 5
+
+// TODO: Cambiar a https://preview.npmjs.com/package/minimist
 const args = process.argv.slice(2);
 
 // Toggle whether to parse (evaluate)

@@ -5,6 +5,10 @@ const lexer = moo.compile({
     lp: /\(/,
     rp: /\)/,
     ws: { match: /\s+/, lineBreaks: true },
+    boolean: ["true", "false"],
+    kwIf: ["if"],
+    kwThen: ["then"],
+    kwElse: ["else"],
     opSum: { match: /\+/ },
     opSub: { match: /-/ },
     opEq: { match: /==/ },
@@ -17,6 +21,10 @@ const lexer = moo.compile({
     opIntDiv: { match: /\/\// },
     opDiv: { match: /\// },
     opMod: { match: /%/ },
+    opOr: { match: /\|\|/ },
+    opAnd: { match: /&&/ },
+    opNot: { match: /!/ }, // DOBLE NEGADO?!!!!
+    identifier: /[a-zA-Z_\$][\w$]*/,
 });
 
 // Hack-ish way to ignore spaces
