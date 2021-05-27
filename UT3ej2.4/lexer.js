@@ -1,5 +1,12 @@
+/**
+ * TODO
+ * Arreglar orden de prioridad de operaciones relacionales y operacioens logicas, chequear test case fallando
+ * Permitir multiples negaciones
+ */
+
 const moo = require("moo");
 
+// TODO: Quitar los match?
 const lexer = moo.compile({
     number: /0[xX][0-9a-fA-F]+|(?:\d*(?:\d\.?|\.\d)\d*)(?:[eE][-+]?\d+)?/,
     lp: /\(/,
@@ -23,7 +30,9 @@ const lexer = moo.compile({
     opMod: { match: /%/ },
     opOr: { match: /\|\|/ },
     opAnd: { match: /&&/ },
-    opNot: { match: /!/ }, // DOBLE NEGADO?!!!!
+    opNot: { match: /!/ }, // TODO: DOBLE NEGADO
+    // arguments: /(?:[a-zA-Z_\$]+)(?:,\s*[a-zA-Z_\$]+)*/,
+    arguments: /(?:[a-zA-Z_\$]+, ?)+(?:[a-zA-Z_\$]+)?/,
     identifier: /[a-zA-Z_\$][\w$]*/,
 });
 

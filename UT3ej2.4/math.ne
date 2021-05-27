@@ -7,11 +7,23 @@ const FUNCTIONS = new Map([
 
 // const max = Math.max.apply(null, numbers);
 
+const callFunc = function(name, args) {
+    console.log(`args: ${args}`)
+    let fun = FUNCTIONS.get(name.value); // TODO: Por qué no me toma el name.toString()???
+    if (fun) {
+        console.log(fun);
+        return (999);
+    } else {
+        throw Error(`Undefined function name: ${name.value}`);
+    }
+};
+
 %}
 
 @lexer lexer
 
 # TODO: doble negación !! para
+# TODO: los argumentos del mathp.js (-p y algún otro)
 
 # arithmetic: a + b
 E -> E %opSum T {% ([num1, , num2]) => (num1 + num2) %}
@@ -35,18 +47,19 @@ E -> E %opGt T {% ([num1, , num2]) => (num1 > num2) %}
 # conditional: if a then b else c
 E -> %kwIf E %kwThen E %kwElse E {% ([, cond, , expr1, , expr2]) => (cond ? expr1 : expr2) %}
 
-# TODO: parámetros...
 # functions: id(...)
-T -> %identifier %lp %rp {% ([name, , ]) => {
-    // TODO: Por qué no me toma el name.toString()???
-    let fun = FUNCTIONS.get(name.value);
-    if (fun) {
-        console.log(fun);
-        return (999);
-    } else {
-        throw Error("definime...");
-    }
-} %}
+# TODO:
+# 1- modificar regex para soportar parámetros con coma y espacios
+# 2- qué pasa con parámetros literales y "variables"? hacer una regla para mezclar
+# literales e "identificadores"
+T -> %identifier %lp %rp {% ([name, , ]) => callFunc(name, null) %}
+T -> %identifier %lp %arguments %rp {% ([name, , args, ]) => callFunc(name, args) %}
+T -> %identifier %lp %identifier %rp {% ([name, , args, ]) => callFunc(name, args) %}
+
+# function parameters
+# P -> null
+# P -> %identifier
+# P -> %identifier "," P
 
 # arithmetic: a * b
 T -> T %opMult F {% ([num1, , num2]) => (num1 * num2) %}

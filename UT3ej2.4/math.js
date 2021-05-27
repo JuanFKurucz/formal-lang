@@ -11,6 +11,17 @@ const FUNCTIONS = new Map([
 
 // const max = Math.max.apply(null, numbers);
 
+const callFunc = function(name, args) {
+    console.log(`args: ${args}`)
+    let fun = FUNCTIONS.get(name.value); // TODO: Por qué no me toma el name.toString()???
+    if (fun) {
+        console.log(fun);
+        return (999);
+    } else {
+        throw Error(`Undefined function name: ${name.value}`);
+    }
+};
+
 var grammar = {
     Lexer: lexer,
     ParserRules: [
@@ -23,16 +34,9 @@ var grammar = {
     {"name": "E", "symbols": ["E", (lexer.has("opGtEq") ? {type: "opGtEq"} : opGtEq), "T"], "postprocess": ([num1, , num2]) => (num1 >= num2)},
     {"name": "E", "symbols": ["E", (lexer.has("opGt") ? {type: "opGt"} : opGt), "T"], "postprocess": ([num1, , num2]) => (num1 > num2)},
     {"name": "E", "symbols": [(lexer.has("kwIf") ? {type: "kwIf"} : kwIf), "E", (lexer.has("kwThen") ? {type: "kwThen"} : kwThen), "E", (lexer.has("kwElse") ? {type: "kwElse"} : kwElse), "E"], "postprocess": ([, cond, , expr1, , expr2]) => (cond ? expr1 : expr2)},
-    {"name": "T", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lp") ? {type: "lp"} : lp), (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess":  ([name, , ]) => {
-            // TODO: Por qué no me toma el name.toString()???
-            let fun = FUNCTIONS.get(name.value);
-            if (fun) {
-                console.log(fun);
-                return (999);
-            } else {
-                throw Error("definime...");
-            }
-        } },
+    {"name": "T", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lp") ? {type: "lp"} : lp), (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([name, , ]) => callFunc(name, null)},
+    {"name": "T", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lp") ? {type: "lp"} : lp), (lexer.has("arguments") ? {type: "arguments"} : arguments), (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([name, , args, ]) => callFunc(name, args)},
+    {"name": "T", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lp") ? {type: "lp"} : lp), (lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([name, , args, ]) => callFunc(name, args)},
     {"name": "T", "symbols": ["T", (lexer.has("opMult") ? {type: "opMult"} : opMult), "F"], "postprocess": ([num1, , num2]) => (num1 * num2)},
     {"name": "T", "symbols": ["T", (lexer.has("opIntDiv") ? {type: "opIntDiv"} : opIntDiv), "F"], "postprocess": ([num1, , num2]) => (Math.floor(num1 / num2))},
     {"name": "T", "symbols": ["T", (lexer.has("opDiv") ? {type: "opDiv"} : opDiv), "F"], "postprocess": ([num1, , num2]) => (num1 / num2)},
