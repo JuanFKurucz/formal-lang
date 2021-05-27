@@ -34,6 +34,7 @@ const lexer = moo.compile({
     // arguments: /(?:[a-zA-Z_\$]+)(?:,\s*[a-zA-Z_\$]+)*/,
     arguments: /(?:[a-zA-Z_\$]+, ?)+(?:[a-zA-Z_\$]+)?/,
     identifier: /[a-zA-Z_\$][\w$]*/,
+    argSeparator: /,/,
 });
 
 // Hack-ish way to ignore spaces

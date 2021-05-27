@@ -3,16 +3,26 @@ const lexer = require("./lexer.js");
 
 const FUNCTIONS = new Map([
   ['max', Math.max],
+  ['min', Math.min],
 ]);
 
 // const max = Math.max.apply(null, numbers);
 
+const __argsToList = function(args) {
+    if (!args) return [];
+
+    // Flat array (max nesting) and then only
+    // keep non-objects (e.g. discard %argSeparator)
+    // that weren't evaluated
+    return args.flat(Infinity).filter((val) => !val.type);
+};
+
 const callFunc = function(name, args) {
-    console.log(`args: ${args}`)
+    const argsList = __argsToList(args);
     let fun = FUNCTIONS.get(name.value); // TODO: Por qué no me toma el name.toString()???
     if (fun) {
-        console.log(fun);
-        return (999);
+        // Call dynamic function and return
+        return fun.apply(null, argsList);
     } else {
         throw Error(`Undefined function name: ${name.value}`);
     }
@@ -47,19 +57,14 @@ E -> E %opGt T {% ([num1, , num2]) => (num1 > num2) %}
 # conditional: if a then b else c
 E -> %kwIf E %kwThen E %kwElse E {% ([, cond, , expr1, , expr2]) => (cond ? expr1 : expr2) %}
 
-# functions: id(...)
-# TODO:
-# 1- modificar regex para soportar parámetros con coma y espacios
-# 2- qué pasa con parámetros literales y "variables"? hacer una regla para mezclar
-# literales e "identificadores"
-T -> %identifier %lp %rp {% ([name, , ]) => callFunc(name, null) %}
-T -> %identifier %lp %arguments %rp {% ([name, , args, ]) => callFunc(name, args) %}
-T -> %identifier %lp %identifier %rp {% ([name, , args, ]) => callFunc(name, args) %}
+# functions: name(arg1, arg2, argN)
+# Note: args are expressions
+# TODO: true && func()???????
+T -> %identifier %lp A:? %rp {% ([name, , args, ]) => callFunc(name, args) %}
 
-# function parameters
-# P -> null
-# P -> %identifier
-# P -> %identifier "," P
+# function arguments
+A -> E
+A -> A %argSeparator E
 
 # arithmetic: a * b
 T -> T %opMult F {% ([num1, , num2]) => (num1 * num2) %}
