@@ -6,17 +6,6 @@ const FUNCTIONS = new Map([
   ['min', Math.min],
 ]);
 
-const callFunc = function(name, args) {
-    // TODO: Por qué no me toma el name.toString()???
-    let fun = FUNCTIONS.get(name.value);
-    if (fun) {
-        // Call dynamic function and return
-        return fun.apply(null, args);
-    } else {
-        throw Error(`Undefined function name: ${name.value}`);
-    }
-};
-
 %}
 
 @lexer lexer
@@ -49,7 +38,7 @@ E -> %kwIf E %kwThen E %kwElse E {% ([, cond, , expr1, , expr2]) => (cond ? expr
 
 # functions: name(arg1, arg2, argN)
 T -> FN {% ([expr]) => expr %}
-FN -> %identifier %lp A:? %rp {% ([name, , args, ]) => callFunc(name, args) %}
+FN -> FI %lp A:? %rp {% ([name, , args, ]) => (FUNCTIONS.get(name) || (function(){throw `Undefined function name: ${name}`}())).apply(null, args) %}
 # function arguments
 A -> E {% ([expr]) => [expr] %}
 A -> A %argSeparator E {% ([expr1, , expr2]) => { expr1.push(expr2); return expr1; } %}
@@ -84,6 +73,7 @@ F -> %opNot %lp E %rp {% ([, , num, ]) => (!(num)) %}
 F -> N {% ([num]) => Number(num) %}
 # -a
 F -> %opSub N {% ([, num]) => (Number(num) * -1) %}
+
 # function: E && fun()
 F -> FN {% ([expr]) => expr %}
 
@@ -95,3 +85,4 @@ F -> B {% ([bool]) => (bool) %}
 # terminals
 N -> %number
 B -> %boolean {% ([bool]) => (bool == "true") %}
+FI -> %identifier {% ([name]) => (name.value) %}

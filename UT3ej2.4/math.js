@@ -10,17 +10,6 @@ const FUNCTIONS = new Map([
   ['min', Math.min],
 ]);
 
-const callFunc = function(name, args) {
-    // TODO: Por qué no me toma el name.toString()???
-    let fun = FUNCTIONS.get(name.value);
-    if (fun) {
-        // Call dynamic function and return
-        return fun.apply(null, args);
-    } else {
-        throw Error(`Undefined function name: ${name.value}`);
-    }
-};
-
 var grammar = {
     Lexer: lexer,
     ParserRules: [
@@ -36,7 +25,7 @@ var grammar = {
     {"name": "T", "symbols": ["FN"], "postprocess": ([expr]) => expr},
     {"name": "FN$ebnf$1", "symbols": ["A"], "postprocess": id},
     {"name": "FN$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "FN", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lp") ? {type: "lp"} : lp), "FN$ebnf$1", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([name, , args, ]) => callFunc(name, args)},
+    {"name": "FN", "symbols": ["FI", (lexer.has("lp") ? {type: "lp"} : lp), "FN$ebnf$1", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([name, , args, ]) => (FUNCTIONS.get(name) || (function(){throw `Undefined function name: ${name}`}())).apply(null, args)},
     {"name": "A", "symbols": ["E"], "postprocess": ([expr]) => [expr]},
     {"name": "A", "symbols": ["A", (lexer.has("argSeparator") ? {type: "argSeparator"} : argSeparator), "E"], "postprocess": ([expr1, , expr2]) => { expr1.push(expr2); return expr1; }},
     {"name": "T", "symbols": ["T", (lexer.has("opMult") ? {type: "opMult"} : opMult), "F"], "postprocess": ([num1, , num2]) => (num1 * num2)},
@@ -58,7 +47,8 @@ var grammar = {
     {"name": "F", "symbols": [(lexer.has("opSub") ? {type: "opSub"} : opSub), "B"], "postprocess": ([, bool]) => (bool * -1)},
     {"name": "F", "symbols": ["B"], "postprocess": ([bool]) => (bool)},
     {"name": "N", "symbols": [(lexer.has("number") ? {type: "number"} : number)]},
-    {"name": "B", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([bool]) => (bool == "true")}
+    {"name": "B", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([bool]) => (bool == "true")},
+    {"name": "FI", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": ([name]) => name.value}
 ]
   , ParserStart: "E"
 }
