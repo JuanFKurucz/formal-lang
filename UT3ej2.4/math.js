@@ -10,23 +10,12 @@ const FUNCTIONS = new Map([
   ['min', Math.min],
 ]);
 
-// const max = Math.max.apply(null, numbers);
-
-const __argsToList = function(args) {
-    if (!args) return [];
-
-    // Flat array (max nesting) and then only
-    // keep non-objects (e.g. discard %argSeparator)
-    // that weren't evaluated
-    return args.flat(Infinity).filter((val) => !val.type);
-};
-
 const callFunc = function(name, args) {
-    const argsList = __argsToList(args);
-    let fun = FUNCTIONS.get(name.value); // TODO: Por qué no me toma el name.toString()???
+    // TODO: Por qué no me toma el name.toString()???
+    let fun = FUNCTIONS.get(name.value);
     if (fun) {
         // Call dynamic function and return
-        return fun.apply(null, argsList);
+        return fun.apply(null, args);
     } else {
         throw Error(`Undefined function name: ${name.value}`);
     }
@@ -44,11 +33,12 @@ var grammar = {
     {"name": "E", "symbols": ["E", (lexer.has("opGtEq") ? {type: "opGtEq"} : opGtEq), "T"], "postprocess": ([num1, , num2]) => (num1 >= num2)},
     {"name": "E", "symbols": ["E", (lexer.has("opGt") ? {type: "opGt"} : opGt), "T"], "postprocess": ([num1, , num2]) => (num1 > num2)},
     {"name": "E", "symbols": [(lexer.has("kwIf") ? {type: "kwIf"} : kwIf), "E", (lexer.has("kwThen") ? {type: "kwThen"} : kwThen), "E", (lexer.has("kwElse") ? {type: "kwElse"} : kwElse), "E"], "postprocess": ([, cond, , expr1, , expr2]) => (cond ? expr1 : expr2)},
-    {"name": "T$ebnf$1", "symbols": ["A"], "postprocess": id},
-    {"name": "T$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
-    {"name": "T", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lp") ? {type: "lp"} : lp), "T$ebnf$1", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([name, , args, ]) => callFunc(name, args)},
-    {"name": "A", "symbols": ["E"]},
-    {"name": "A", "symbols": ["A", (lexer.has("argSeparator") ? {type: "argSeparator"} : argSeparator), "E"]},
+    {"name": "T", "symbols": ["FN"], "postprocess": ([expr]) => expr},
+    {"name": "FN$ebnf$1", "symbols": ["A"], "postprocess": id},
+    {"name": "FN$ebnf$1", "symbols": [], "postprocess": function(d) {return null;}},
+    {"name": "FN", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lp") ? {type: "lp"} : lp), "FN$ebnf$1", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([name, , args, ]) => callFunc(name, args)},
+    {"name": "A", "symbols": ["E"], "postprocess": ([expr]) => [expr]},
+    {"name": "A", "symbols": ["A", (lexer.has("argSeparator") ? {type: "argSeparator"} : argSeparator), "E"], "postprocess": ([expr1, , expr2]) => { expr1.push(expr2); return expr1; }},
     {"name": "T", "symbols": ["T", (lexer.has("opMult") ? {type: "opMult"} : opMult), "F"], "postprocess": ([num1, , num2]) => (num1 * num2)},
     {"name": "T", "symbols": ["T", (lexer.has("opIntDiv") ? {type: "opIntDiv"} : opIntDiv), "F"], "postprocess": ([num1, , num2]) => (Math.floor(num1 / num2))},
     {"name": "T", "symbols": ["T", (lexer.has("opDiv") ? {type: "opDiv"} : opDiv), "F"], "postprocess": ([num1, , num2]) => (num1 / num2)},
@@ -64,6 +54,7 @@ var grammar = {
     {"name": "F", "symbols": [(lexer.has("opNot") ? {type: "opNot"} : opNot), (lexer.has("lp") ? {type: "lp"} : lp), "E", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([, , num, ]) => (!(num))},
     {"name": "F", "symbols": ["N"], "postprocess": ([num]) => Number(num)},
     {"name": "F", "symbols": [(lexer.has("opSub") ? {type: "opSub"} : opSub), "N"], "postprocess": ([, num]) => (Number(num) * -1)},
+    {"name": "F", "symbols": ["FN"], "postprocess": ([expr]) => expr},
     {"name": "F", "symbols": [(lexer.has("opSub") ? {type: "opSub"} : opSub), "B"], "postprocess": ([, bool]) => (bool * -1)},
     {"name": "F", "symbols": ["B"], "postprocess": ([bool]) => (bool)},
     {"name": "N", "symbols": [(lexer.has("number") ? {type: "number"} : number)]},

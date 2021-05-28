@@ -6,23 +6,12 @@ const FUNCTIONS = new Map([
   ['min', Math.min],
 ]);
 
-// const max = Math.max.apply(null, numbers);
-
-const __argsToList = function(args) {
-    if (!args) return [];
-
-    // Flat array (max nesting) and then only
-    // keep non-objects (e.g. discard %argSeparator)
-    // that weren't evaluated
-    return args.flat(Infinity).filter((val) => !val.type);
-};
-
 const callFunc = function(name, args) {
-    const argsList = __argsToList(args);
-    let fun = FUNCTIONS.get(name.value); // TODO: Por qué no me toma el name.toString()???
+    // TODO: Por qué no me toma el name.toString()???
+    let fun = FUNCTIONS.get(name.value);
     if (fun) {
         // Call dynamic function and return
-        return fun.apply(null, argsList);
+        return fun.apply(null, args);
     } else {
         throw Error(`Undefined function name: ${name.value}`);
     }
@@ -34,6 +23,7 @@ const callFunc = function(name, args) {
 
 # TODO: doble negación !! para
 # TODO: los argumentos del mathp.js (-p y algún otro)
+# TODO: revisar TODOs en todos los archivos
 
 # arithmetic: a + b
 E -> E %opSum T {% ([num1, , num2]) => (num1 + num2) %}
@@ -58,13 +48,11 @@ E -> E %opGt T {% ([num1, , num2]) => (num1 > num2) %}
 E -> %kwIf E %kwThen E %kwElse E {% ([, cond, , expr1, , expr2]) => (cond ? expr1 : expr2) %}
 
 # functions: name(arg1, arg2, argN)
-# Note: args are expressions
-# TODO: true && func()???????
-T -> %identifier %lp A:? %rp {% ([name, , args, ]) => callFunc(name, args) %}
-
+T -> FN {% ([expr]) => expr %}
+FN -> %identifier %lp A:? %rp {% ([name, , args, ]) => callFunc(name, args) %}
 # function arguments
-A -> E
-A -> A %argSeparator E
+A -> E {% ([expr]) => [expr] %}
+A -> A %argSeparator E {% ([expr1, , expr2]) => { expr1.push(expr2); return expr1; } %}
 
 # arithmetic: a * b
 T -> T %opMult F {% ([num1, , num2]) => (num1 * num2) %}
@@ -96,6 +84,8 @@ F -> %opNot %lp E %rp {% ([, , num, ]) => (!(num)) %}
 F -> N {% ([num]) => Number(num) %}
 # -a
 F -> %opSub N {% ([, num]) => (Number(num) * -1) %}
+# function: E && fun()
+F -> FN {% ([expr]) => expr %}
 
 # boolean: -a
 F -> %opSub B {% ([, bool]) => (bool * -1) %}
@@ -104,5 +94,4 @@ F -> B {% ([bool]) => (bool) %}
 
 # terminals
 N -> %number
-# B -> %boolean
 B -> %boolean {% ([bool]) => (bool == "true") %}
