@@ -4,10 +4,7 @@ const lexer = require('./lexer.js');
 const prompt = require('prompt-sync')({ sigint: true });
 
 
-// 1 - 1 == 1 + 5 debería ser 1 - (1 == 1) + 5
-// false
-// 1 - (1 == 1) + 5
-// 5
+// TODO: los argumentos del mathp.js(-p y el: t)
 
 // TODO: Cambiar a https://preview.npmjs.com/package/minimist
 const args = process.argv.slice(2);

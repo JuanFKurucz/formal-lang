@@ -41,6 +41,7 @@ var grammar = {
     {"name": "F", "symbols": [(lexer.has("lp") ? {type: "lp"} : lp), "E", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([, num, ]) => Number(num)},
     {"name": "F", "symbols": [(lexer.has("opSub") ? {type: "opSub"} : opSub), (lexer.has("lp") ? {type: "lp"} : lp), "E", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([, , num, ]) => (Number(num) * -1)},
     {"name": "F", "symbols": [(lexer.has("opNot") ? {type: "opNot"} : opNot), (lexer.has("lp") ? {type: "lp"} : lp), "E", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([, , num, ]) => (!(num))},
+    {"name": "F", "symbols": [(lexer.has("opNot") ? {type: "opNot"} : opNot), "E"], "postprocess": ([, num]) => (!(num))},
     {"name": "F", "symbols": ["N"], "postprocess": ([num]) => Number(num)},
     {"name": "F", "symbols": [(lexer.has("opSub") ? {type: "opSub"} : opSub), "N"], "postprocess": ([, num]) => (Number(num) * -1)},
     {"name": "F", "symbols": ["FN"], "postprocess": ([expr]) => expr},
@@ -48,7 +49,7 @@ var grammar = {
     {"name": "F", "symbols": ["B"], "postprocess": ([bool]) => (bool)},
     {"name": "N", "symbols": [(lexer.has("number") ? {type: "number"} : number)]},
     {"name": "B", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([bool]) => (bool == "true")},
-    {"name": "FI", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": ([name]) => name.value}
+    {"name": "FI", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess": ([name]) => (name.value)}
 ]
   , ParserStart: "E"
 }

@@ -10,16 +10,13 @@ const FUNCTIONS = new Map([
 
 @lexer lexer
 
-# TODO: doble negación !! para
-# TODO: los argumentos del mathp.js (-p y algún otro)
-# TODO: revisar TODOs en todos los archivos
-
 # arithmetic: a + b
 E -> E %opSum T {% ([num1, , num2]) => (num1 + num2) %}
 # arithmetic: a - b
 E -> E %opSub T {% ([num1, , num2]) => (num1 - num2) %}
 
-# TODO: mover a más prioridad
+# We decided to give those operators the same precedence
+# than arithmetic's + and -
 # logic: a == b
 E -> E %opEq T {% ([num1, , num2]) => (num1 == num2) %}
 # logic: a != b
@@ -69,6 +66,8 @@ F -> %lp E %rp {% ([, num, ]) => Number(num) %}
 F -> %opSub %lp E %rp {% ([, , num, ]) => (Number(num) * -1) %}
 # !(e)
 F -> %opNot %lp E %rp {% ([, , num, ]) => (!(num)) %}
+# !!e (N number of !s)
+F -> %opNot E {% ([, num]) => (!(num)) %}
 # a
 F -> N {% ([num]) => Number(num) %}
 # -a

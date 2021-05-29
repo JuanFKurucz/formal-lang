@@ -2,11 +2,7 @@ const nearley = require("nearley");
 const grammar = require("./math.js");
 const assert = require('assert');
 
-// Create new parser before each test
 let parser, expr;
-beforeEach(function() {
-    parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-});
 
 const evaluate = expr => {
     expr.forEach(e => {
@@ -42,17 +38,14 @@ describe('logic', function() {
 
 describe('arithmetic + logic', function() {
     expr = [
-        '1 - 1 == 1 + 5',
-        '1*2 == 1 != 5*6',
-        '5 // 1 >= 1 <= 5 > (5 % 2) < 6',
+        ['1 - 1 == 1 + 5', 5],
+        '1*2 == 1 != 5*6', ['5 // 1 >= 1 <= 5 > (5 % 2) < 6', true],
         ' 1 >= (1 + 1 <= 5 ) > -5 < 6 == (6 / 5)',
     ];
     evaluate(expr);
 });
 
 describe('relational', function() {
-
-    // sin identificadores
     expr = [
         '(1 || 0) && 1',
         '1 && (1 || 0 || 4) && 0',
