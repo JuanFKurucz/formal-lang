@@ -1,5 +1,5 @@
 const nearley = require("nearley");
-const grammar = require("./math.js");
+const grammar = require("./grammar.js");
 const assert = require('assert');
 
 let parser, expr;

@@ -1,5 +1,5 @@
 const nearley = require("nearley");
-const grammar = require("./math.js");
+const grammar = require("./grammar.js");
 const lexer = require('./lexer.js');
 const prompt = require('prompt-sync')({ sigint: true });
 
@@ -8,6 +8,9 @@ const argv = require('minimist')(process.argv.slice(2));
 // Toggle whether to parse (evaluate)
 // or just print all the expression tokens
 const tokenize = argv["t"];
+
+// Will evaluate only this expression
+// and quit
 const expression = argv["e"];
 
 let parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));

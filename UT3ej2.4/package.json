@@ -13,7 +13,6 @@
         "mocha": "^8.4.0",
         "moo": "^0.5.1",
         "nearley": "^2.20.1",
-        "prompt-sync": "^4.2.0",
-        "treeify": "^1.1.0"
+        "prompt-sync": "^4.2.0"
     }
 }
