@@ -43,30 +43,29 @@ const FUNCTIONS = new Map([
 
 @lexer lexer
 
-# arithmetic: a + b
-E -> E %opSum T {% ([num1, , num2]) => (num1 + num2) %}
-# arithmetic: a - b
-E -> E %opSub T {% ([num1, , num2]) => (num1 - num2) %}
-
-# We decided to give those operators the same precedence
-# than arithmetic's + and -
 # logic: a == b
-E -> E %opEq T {% ([num1, , num2]) => (num1 == num2) %}
+E -> E %opEq L {% ([num1, , num2]) => (num1 == num2) %}
 # logic: a != b
-E -> E %opNotEq T {% ([num1, , num2]) => (num1 != num2) %}
+E -> E %opNotEq L {% ([num1, , num2]) => (num1 != num2) %}
 # logic: a <= b
-E -> E %opLtEq T {% ([num1, , num2]) => (num1 <= num2) %}
+E -> E %opLtEq L {% ([num1, , num2]) => (num1 <= num2) %}
 # logic: a < b
-E -> E %opLt T {% ([num1, , num2]) => (num1 < num2) %}
+E -> E %opLt L {% ([num1, , num2]) => (num1 < num2) %}
 # logic: a => b
-E -> E %opGtEq T {% ([num1, , num2]) => (num1 >= num2) %}
+E -> E %opGtEq L {% ([num1, , num2]) => (num1 >= num2) %}
 # logic: a > b
-E -> E %opGt T {% ([num1, , num2]) => (num1 > num2) %}
+E -> E %opGt L {% ([num1, , num2]) => (num1 > num2) %}
+
+# arithmetic: a + b
+L -> L %opSum T {% ([num1, , num2]) => (num1 + num2) %}
+# arithmetic: a - b
+L -> L %opSub T {% ([num1, , num2]) => (num1 - num2) %}
 
 # conditional: if a then b else c
 E -> %kwIf E %kwThen E %kwElse E {% ([, cond, , expr1, , expr2]) => (cond ? expr1 : expr2) %}
 
 # functions: name(arg1, arg2, argN)
+L -> FN {% ([expr]) => expr %}
 T -> FN {% ([expr]) => expr %}
 FN -> FI %lp A:? %rp {% ([name, , args, ]) => (FUNCTIONS.get(name) || (function(){throw `Undefined function name: ${name}`}())).apply(null, args) %}
 # function arguments
@@ -89,12 +88,14 @@ T -> T %opAnd F {% ([num1, , num2]) => (num1 && num2) %}
 # relational: !a
 T -> %opNot F {% ([, num]) => (!(num)) %}
 
-E -> T {% ([expr]) => expr %}
+E -> L {% ([expr]) => expr %}
+L -> T {% ([expr]) => expr %}
 T -> F {% ([expr]) => expr %}
 
 # (e)
 T -> %lp E %rp {% ([, num, ]) => Number(num) %}
 F -> %lp E %rp {% ([, num, ]) => Number(num) %}
+L -> %lp E %rp {% ([, num, ]) => Number(num) %}
 # -(e)
 F -> %opSub %lp E %rp {% ([, , num, ]) => (Number(num) * -1) %}
 # !(e)

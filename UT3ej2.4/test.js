@@ -38,7 +38,7 @@ describe('logic', function() {
 
 describe('arithmetic + logic', function() {
     expr = [
-        ['1 - 1 == 1 + 5', 5],
+        '1 - 1 == 1 + 5',
         '1*2 == 1 != 5*6', ['5 // 1 >= 1 <= 5 > (5 % 2) < 6', true],
         ' 1 >= (1 + 1 <= 5 ) > -5 < 6 == (6 / 5)',
     ];
