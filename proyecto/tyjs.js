@@ -6,14 +6,13 @@ const lexer = require('./lexer.js');
 const argv = require('minimist')(process.argv.slice(2));
 
 class Type {
-    // parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 
     constructor(type) {
-        // TODO: check typeof(type) == "string"?
+        typeof(type) === "string" || (function() { throw "type should be a string" }());
+
         this.parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
         this.parser.feed(type);
         this.ast = this.parser.results[0];
-        // {"type": "number", "checker": CHECKERS.get("number")]}
     }
 
     checks(expr) {
@@ -26,29 +25,10 @@ class Type {
 }
 
 let numberType = new Type("number");
-console.log(numberType.checks("gfgfg"));
+console.log(numberType.checks(1));
 
-// if (expression && typeof(expression) !== "boolean") {
-//     // Evaluate expression and quit
-//     parser.feed(expression.toString());
-//     console.log(parser.results[0]);
-// } else {
-//     // Prompt the user
-//     while (true) {
-//         let expr = prompt('> ');
-//         parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
+let stringTypeWrong = new Type("string");
+console.log(stringTypeWrong.checks(111));
 
-//         if (tokenize || expr.startsWith(":t ")) {
-//             // Print tokens
-//             expr = expr.replace(":t ", "");
-//             lexer.reset(expr)
-//             for (const token of lexer) {
-//                 console.log(`${token.type}: ${JSON.stringify(token.text)}`);
-//             }
-//         } else {
-//             // Evaluate
-//             parser.feed(expr);
-//             console.log(parser.results[0]);
-//         }
-//     }
-// }
+let stringTypeGood = new Type("string");
+console.log(stringTypeGood.checks("111"));
