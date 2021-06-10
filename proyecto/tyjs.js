@@ -24,11 +24,46 @@ class Type {
 
 }
 
-let numberType = new Type("number");
-console.log(numberType.checks(1));
+let instance = new Type("function");
+console.log(instance.checks(x => 1));
 
-let stringTypeWrong = new Type("string");
-console.log(stringTypeWrong.checks(111));
+instance = new Type("undefined");
+console.log(instance.checks(undefined));
 
-let stringTypeGood = new Type("string");
-console.log(stringTypeGood.checks("111"));
+instance = new Type("string");
+console.log(instance.checks("111"));
+
+instance = new Type("void");
+console.log(instance.checks(undefined));
+console.log(instance.checks(null));
+
+instance = new Type("int");
+console.log(instance.checks(10));
+console.log(instance.checks(-10));
+
+instance = new Type("double");
+// console.log(instance.checks(10));
+console.log(instance.checks(10.5));
+console.log(instance.checks(NaN));
+console.log(instance.checks(Infinity));
+
+instance = new Type("char");
+// console.log(instance.checks("111"));
+console.log(instance.checks("1"));
+
+instance = new Type("byte");
+// console.log(instance.checks(256));
+// console.log(instance.checks(-1));
+console.log(instance.checks(50));
+
+instance = new Type("any");
+console.log(instance.checks(50));
+console.log(instance.checks(Infinity));
+console.log(instance.checks(null));
+console.log(instance.checks("1"));
+
+instance = new Type("_");
+console.log(instance.checks(50));
+console.log(instance.checks(Infinity));
+console.log(instance.checks(null));
+console.log(instance.checks("1"));
