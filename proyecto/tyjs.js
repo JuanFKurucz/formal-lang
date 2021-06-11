@@ -1,31 +1,47 @@
 const nearley = require("nearley");
 const grammar = require("./grammar.js");
 const lexer = require('./lexer.js');
-// const prompt = require('prompt-sync')({ sigint: true });
-
-const argv = require('minimist')(process.argv.slice(2));
 
 class Type {
 
-    constructor(type) {
+    /**
+     * Default Type constructor
+     * @param {string} type a type(s) expression
+     * @param {boolean} debug debug mode toggle
+     */
+    constructor(type, debug = false) {
         typeof(type) === "string" || (function() { throw "type should be a string" }());
 
         this.parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-        this.parser.feed(type);
+        try {
+            this.parser.feed(type);
+        } catch (err) {
+            if (debug) {
+                // Throw full error stack in debug mode
+                throw err;
+            } else {
+                throw new SyntaxError(`Invalid type "${type}"`);
+            }
+        }
         this.ast = this.parser.results[0];
         // console.log(this.ast);
     }
 
-    checks(expr) {
-        // Note: our AST's root is just
-        // a function that takes an
-        // expression and checks its
-        // type, returning either true
-        // or false
-        return this.ast(expr);
+    /**
+     * Checkers whether a value belongs
+     * to this instance's type
+     * @param {*} value any value
+     */
+    checks(value) {
+        // AST is a combination of different
+        // "checkers" functions
+        return this.ast(value);
     }
 
 }
+
+// TODO: move all those to a node test file
+// Note: all those prints should output "true"
 
 let instance = new Type("function");
 console.log(instance.checks(x => 1));
@@ -110,6 +126,11 @@ instance = new Type("!(string & (char))");
 console.log(!instance.checks("a"));
 console.log(instance.checks("aa"));
 
+instance = new Type("any | number");
+console.log(instance.checks("a"));
+console.log(instance.checks("aa"));
+console.log(instance.checks(123));
+
 console.log()
 
 instance = new Type("string & /.{3}/");
@@ -125,3 +146,48 @@ console.log(!instance.checks("123"));
 instance = new Type("!/.{3}/");
 console.log(!instance.checks("aaa"));
 console.log(instance.checks("aa"));
+
+console.log();
+
+instance = new Type("in [\"123\", 5, true]");
+console.log(instance.checks(5));
+console.log(instance.checks("123"));
+console.log(instance.checks(true));
+console.log(!instance.checks("abc"));
+
+instance = new Type("!in [\"123\", 5, true]");
+console.log(!instance.checks(5));
+console.log(!instance.checks("123"));
+console.log(!instance.checks(true));
+console.log(instance.checks("abc"));
+
+instance = new Type("string | in [\"123\", 5, true]");
+console.log(instance.checks(5));
+console.log(instance.checks("123"));
+console.log(instance.checks(true));
+console.log(instance.checks("abc"));
+console.log(instance.checks("abcd"));
+
+instance = new Type("(string & char) | in [\"123\", 5, true]");
+console.log(instance.checks(5));
+console.log(instance.checks("123"));
+console.log(instance.checks(true));
+console.log(!instance.checks("abc"));
+console.log(!instance.checks("abcd"));
+console.log(instance.checks("a"));
+
+console.log();
+
+try {
+    instance = new Type("byte && string");
+    console.log(false);
+} catch (err) {
+    console.log(true);
+}
+
+try {
+    instance = new Type("in [\"abc\" 1]");
+    console.log(false);
+} catch (err) {
+    console.log(true);
+}

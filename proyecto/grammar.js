@@ -14,7 +14,7 @@ const CHECKERS = new Map([
     ["object", value => typeof(value) === "object"],
     ["symbol", value => typeof(value) === "symbol"],
     ["bigint", value => typeof(value) === "bigint"],
-    ["void", value => (value === null || typeof(value) === "undefined")], // typeof(null) = 'object', not 'null'
+    ["void", value => (value === null || typeof(value) === "undefined")], // typeof(null) = 'object' instead of 'null'
     ["int", value => (typeof(value) === "number" && Number.isInteger(value))],
     ["double", value => (typeof(value) === "number" && !Number.isInteger(value))],
     ["char", value => (typeof(value) === "string" && value.length === 1)],
@@ -34,6 +34,7 @@ var grammar = {
     {"name": "E", "symbols": ["conjunction"], "postprocess": ([x]) => x},
     {"name": "E", "symbols": ["disjunction"], "postprocess": ([x]) => x},
     {"name": "E", "symbols": ["minus"], "postprocess": ([x]) => x},
+    {"name": "E", "symbols": ["inclusion"], "postprocess": ([x]) => x},
     {"name": "atom", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xundefined") ? {type: "xundefined"} : xundefined)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
@@ -48,6 +49,14 @@ var grammar = {
     {"name": "atom", "symbols": [(lexer.has("char") ? {type: "char"} : char)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("byte") ? {type: "byte"} : byte)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("any") ? {type: "any"} : any)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
+    {"name": "inclusion", "symbols": [(lexer.has("xin") ? {type: "xin"} : xin), (lexer.has("array") ? {type: "array"} : array)], "postprocess":  ([xin, array]) => {
+            // Note: we're deserializing here on purpose
+            // so that any syntax error gets triggered
+            // while parsing a "type", and not while
+            // checking for a value
+            let arrayValues = JSON.parse(array.value);
+            return ((value) => arrayValues.includes(value));
+        } },
     {"name": "regularExpr", "symbols": [(lexer.has("regexp") ? {type: "regexp"} : regexp)], "postprocess": ([regExp]) => ((value) => new RegExp(regExp.value.slice(1,-1)).test(value.toString()))},
     {"name": "group", "symbols": [(lexer.has("lp") ? {type: "lp"} : lp), "E", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([lp, expr, rp]) => expr},
     {"name": "negation", "symbols": [(lexer.has("not") ? {type: "not"} : not), "E"], "postprocess": ([not, typeChecker]) => ((value) => (!typeChecker(value)))},

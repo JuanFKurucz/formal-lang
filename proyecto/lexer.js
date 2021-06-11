@@ -1,5 +1,5 @@
 const moo = require("moo");
-""
+
 const lexer = moo.compile({
     number: ["number"],
     xundefined: ["undefined"],
@@ -16,6 +16,8 @@ const lexer = moo.compile({
     byte: ["byte"],
     any: ["_", "any"],
 
+    xin: ["in"],
+
     not: /!/,
     and: /&/,
     or: /\|/,
@@ -23,9 +25,12 @@ const lexer = moo.compile({
 
     lp: /\(/,
     rp: /\)/,
-    // fs: /\//,
+
+    // lsb: /\[/,
+    // rsb: /\]/,
 
     regexp: /\/.*\//,
+    array: /\[.*\]/,
 
     ws: { match: /\s+/, lineBreaks: true },
 });

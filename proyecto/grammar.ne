@@ -10,7 +10,7 @@ const CHECKERS = new Map([
     ["object", value => typeof(value) === "object"],
     ["symbol", value => typeof(value) === "symbol"],
     ["bigint", value => typeof(value) === "bigint"],
-    ["void", value => (value === null || typeof(value) === "undefined")], // typeof(null) = 'object', not 'null'
+    ["void", value => (value === null || typeof(value) === "undefined")], // typeof(null) = 'object' instead of 'null'
     ["int", value => (typeof(value) === "number" && Number.isInteger(value))],
     ["double", value => (typeof(value) === "number" && !Number.isInteger(value))],
     ["char", value => (typeof(value) === "string" && value.length === 1)],
@@ -32,6 +32,7 @@ E -> negation {% ([x]) => x %}
 E -> conjunction {% ([x]) => x %}
 E -> disjunction {% ([x]) => x %}
 E -> minus {% ([x]) => x %}
+E -> inclusion {% ([x]) => x %}
 # E -> L {% ([expr]) => expr %}
 
 # Atoms
@@ -49,6 +50,16 @@ atom -> %double {% ([type]) => getAtomTypeChecker(type.value) %}
 atom -> %char {% ([type]) => getAtomTypeChecker(type.value) %}
 atom -> %byte {% ([type]) => getAtomTypeChecker(type.value) %}
 atom -> %any {% ([type]) => getAtomTypeChecker(type.value) %}
+
+# in [value1, value2]
+inclusion -> %xin %array {% ([xin, array]) => {
+    // Note: we're deserializing here on purpose
+    // so that any syntax error gets triggered
+    // while parsing a "type", and not while
+    // checking for a value
+    let arrayValues = JSON.parse(array.value);
+    return ((value) => arrayValues.includes(value));
+} %}
 
 # /{regexp}/
 regularExpr -> %regexp {% ([regExp]) => ((value) => new RegExp(regExp.value.slice(1,-1)).test(value.toString())) %}
