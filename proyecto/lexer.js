@@ -15,6 +15,13 @@ const lexer = moo.compile({
     char: ["char"],
     byte: ["byte"],
     any: ["_", "any"],
+
+    not: /!/,
+    and: /&/,
+    or: /\|/,
+    sub: /-/,
+
+    ws: { match: /\s+/, lineBreaks: true },
 });
 
 // Hack-ish way to ignore spaces

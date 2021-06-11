@@ -19,7 +19,8 @@ class Type {
         // Nota: asumimos que en ast guardamos
         // la raíz, la cual tiene una función
         // de entrada que "chequea" todo el árbol
-        return this.ast.checker(expr);
+        return this.ast(expr);
+        // return this.ast;
     }
 
 }
@@ -67,3 +68,33 @@ console.log(instance.checks(50));
 console.log(instance.checks(Infinity));
 console.log(instance.checks(null));
 console.log(instance.checks("1"));
+
+console.log();
+
+instance = new Type("!byte");
+// console.log(instance.checks(50));
+// console.log(instance.checks(0));
+console.log(instance.checks(undefined));
+console.log(instance.checks(-1));
+
+console.log()
+
+instance = new Type("number & !byte");
+// console.log(instance.checks(50));
+// console.log(instance.checks(0));
+// console.log(instance.checks(undefined));
+console.log(instance.checks(-1));
+
+console.log()
+
+instance = new Type("number | !undefined");
+console.log(instance.checks(50));
+console.log(instance.checks(0));
+// console.log(instance.checks(undefined));
+console.log(instance.checks(-1));
+
+console.log()
+
+instance = new Type("string - char");
+// console.log(instance.checks("a"));
+console.log(instance.checks("aa"));
