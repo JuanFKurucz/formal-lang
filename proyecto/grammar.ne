@@ -26,6 +26,8 @@ const getAtomTypeChecker = type => (CHECKERS.get(type));
 
 # Main
 E -> atom {% ([x]) => x %}
+E -> regularExpr {% ([x]) => x %}
+E -> group {% ([x]) => x %}
 E -> negation {% ([x]) => x %}
 E -> conjunction {% ([x]) => x %}
 E -> disjunction {% ([x]) => x %}
@@ -47,6 +49,12 @@ atom -> %double {% ([type]) => getAtomTypeChecker(type.value) %}
 atom -> %char {% ([type]) => getAtomTypeChecker(type.value) %}
 atom -> %byte {% ([type]) => getAtomTypeChecker(type.value) %}
 atom -> %any {% ([type]) => getAtomTypeChecker(type.value) %}
+
+# /{regexp}/
+regularExpr -> %regexp {% ([regExp]) => ((value) => new RegExp(regExp.value.slice(1,-1)).test(value.toString())) %}
+
+# (type)
+group -> %lp E %rp {% ([lp, expr, rp]) => expr %}
 
 # !type
 negation -> %not E {% ([not, typeChecker]) => ((value) => (!typeChecker(value))) %}

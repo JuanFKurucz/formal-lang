@@ -28,6 +28,8 @@ var grammar = {
     Lexer: lexer,
     ParserRules: [
     {"name": "E", "symbols": ["atom"], "postprocess": ([x]) => x},
+    {"name": "E", "symbols": ["regularExpr"], "postprocess": ([x]) => x},
+    {"name": "E", "symbols": ["group"], "postprocess": ([x]) => x},
     {"name": "E", "symbols": ["negation"], "postprocess": ([x]) => x},
     {"name": "E", "symbols": ["conjunction"], "postprocess": ([x]) => x},
     {"name": "E", "symbols": ["disjunction"], "postprocess": ([x]) => x},
@@ -46,6 +48,8 @@ var grammar = {
     {"name": "atom", "symbols": [(lexer.has("char") ? {type: "char"} : char)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("byte") ? {type: "byte"} : byte)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("any") ? {type: "any"} : any)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
+    {"name": "regularExpr", "symbols": [(lexer.has("regexp") ? {type: "regexp"} : regexp)], "postprocess": ([regExp]) => ((value) => new RegExp(regExp.value.slice(1,-1)).test(value.toString()))},
+    {"name": "group", "symbols": [(lexer.has("lp") ? {type: "lp"} : lp), "E", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([lp, expr, rp]) => expr},
     {"name": "negation", "symbols": [(lexer.has("not") ? {type: "not"} : not), "E"], "postprocess": ([not, typeChecker]) => ((value) => (!typeChecker(value)))},
     {"name": "conjunction", "symbols": ["E", (lexer.has("and") ? {type: "and"} : and), "E"], "postprocess": ([typeChecker1, and, typeChecker2]) => ((value) => (typeChecker1(value) && typeChecker2(value)))},
     {"name": "disjunction", "symbols": ["E", (lexer.has("or") ? {type: "or"} : or), "E"], "postprocess": ([typeChecker1, or, typeChecker2]) => ((value) => (typeChecker1(value) || typeChecker2(value)))},

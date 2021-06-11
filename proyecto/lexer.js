@@ -21,6 +21,12 @@ const lexer = moo.compile({
     or: /\|/,
     sub: /-/,
 
+    lp: /\(/,
+    rp: /\)/,
+    // fs: /\//,
+
+    regexp: /\/.*\//,
+
     ws: { match: /\s+/, lineBreaks: true },
 });
 
