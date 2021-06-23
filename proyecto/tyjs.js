@@ -100,7 +100,7 @@ console.log(instance.checks(-1));
 
 console.log()
 
-instance = new Type("number & !byte");
+instance = new Type("number & !byte", true);
 console.log(!instance.checks(50));
 console.log(!instance.checks(0));
 console.log(!instance.checks(undefined));
@@ -149,7 +149,7 @@ console.log(instance.checks("aa"));
 
 console.log();
 
-instance = new Type("in [\"123\", 5, true]");
+instance = new Type("in [\"123\", 5, true]", true);
 console.log(instance.checks(5));
 console.log(instance.checks("123"));
 console.log(instance.checks(true));
@@ -182,12 +182,49 @@ try {
     instance = new Type("byte && string");
     console.log(false);
 } catch (err) {
-    console.log(true);
+    console.log(err.name == "SyntaxError");
 }
 
 try {
     instance = new Type("in [\"abc\" 1]");
     console.log(false);
 } catch (err) {
-    console.log(true);
+    console.log(err.name == "SyntaxError");
+}
+
+console.log();
+
+instance = new Type("[...boolean]");
+console.log(!instance.checks([false, "abc"]));
+console.log(instance.checks([true, false, false]));
+
+instance = new Type("[...(string | boolean)]");
+console.log(!instance.checks([false, "abc", 10]));
+console.log(instance.checks([false, "abc"]));
+console.log(instance.checks([true, false, false]));
+
+instance = new Type("[...(in [10])]", true);
+console.log(!instance.checks([false, "abc", 10]));
+console.log(instance.checks([false, "abc"]));
+console.log(instance.checks([true, false, false]));
+
+instance = new Type("[...]");
+console.log(instance.checks([false, "abc"]));
+console.log(instance.checks([true, false, false]));
+
+instance = new Type("[...any]");
+console.log(instance.checks([false, "abc"]));
+console.log(instance.checks([true, false, false]));
+
+// Note: this is an extra, %any = ["any", "_"]
+instance = new Type("[..._]");
+console.log(instance.checks([false, "abc"]));
+console.log(instance.checks([true, false, false]));
+// TODO: capture errors on method "checks" or just throw
+// the default stack when it can't reduce?
+try {
+    console.log(instance.checks(true));
+    console.log(false);
+} catch (err) {
+    console.log(err.name == "TypeError");
 }

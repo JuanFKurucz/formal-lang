@@ -16,7 +16,10 @@ const lexer = moo.compile({
     byte: ["byte"],
     any: ["_", "any"],
 
-    xin: ["in"],
+    spread: ["..."],
+
+    regexp: /\/.*\//,
+    inArray: /in\s*\[.*\]/, // We have to use it like that because we are also matching arrays with %lsb and %rsb
 
     not: /!/,
     and: /&/,
@@ -26,11 +29,8 @@ const lexer = moo.compile({
     lp: /\(/,
     rp: /\)/,
 
-    // lsb: /\[/,
-    // rsb: /\]/,
-
-    regexp: /\/.*\//,
-    array: /\[.*\]/,
+    lsb: /\[/,
+    rsb: /\]/,
 
     ws: { match: /\s+/, lineBreaks: true },
 });

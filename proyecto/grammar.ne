@@ -25,15 +25,30 @@ const getAtomTypeChecker = type => (CHECKERS.get(type));
 @lexer lexer
 
 # Main
-E -> atom {% ([x]) => x %}
-E -> regularExpr {% ([x]) => x %}
-E -> group {% ([x]) => x %}
-E -> negation {% ([x]) => x %}
-E -> conjunction {% ([x]) => x %}
-E -> disjunction {% ([x]) => x %}
-E -> minus {% ([x]) => x %}
-E -> inclusion {% ([x]) => x %}
-# E -> L {% ([expr]) => expr %}
+E -> T {% ([expr]) => expr %}
+E -> I {% ([expr]) => expr %}
+
+# Types and their combinations
+T -> atom {% ([x]) => x %}
+T -> regularExpr {% ([x]) => x %}
+T -> group {% ([x]) => x %}
+T -> negation {% ([x]) => x %}
+T -> conjunction {% ([x]) => x %}
+T -> disjunction {% ([x]) => x %}
+T -> minus {% ([x]) => x %}
+T -> inclusion {% ([x]) => x %}
+
+# Iterables
+I -> zeroPlusList {% ([expr]) => expr %}
+
+# TODO: move down
+zeroPlusList -> %lsb %spread T %rsb {% ([lsb, spread, typeChecker, rsb]) =>
+    (values) => {
+        return values.reduce(((acc, value) => (acc && typeChecker(value))), true) || false
+    }
+%}
+zeroPlusList -> %lsb %spread %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
+zeroPlusList -> %lsb %spread %any %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
 
 # Atoms
 atom -> %number {% ([type]) => getAtomTypeChecker(type.value) %}
@@ -52,12 +67,13 @@ atom -> %byte {% ([type]) => getAtomTypeChecker(type.value) %}
 atom -> %any {% ([type]) => getAtomTypeChecker(type.value) %}
 
 # in [value1, value2]
-inclusion -> %xin %array {% ([xin, array]) => {
+inclusion -> %inArray {% ([inArray]) => {
     // Note: we're deserializing here on purpose
     // so that any syntax error gets triggered
     // while parsing a "type", and not while
     // checking for a value
-    let arrayValues = JSON.parse(array.value);
+    console.log(inArray.value);
+    let arrayValues = JSON.parse(inArray.value.replace("in", "").trim());
     return ((value) => arrayValues.includes(value));
 } %}
 
@@ -65,16 +81,16 @@ inclusion -> %xin %array {% ([xin, array]) => {
 regularExpr -> %regexp {% ([regExp]) => ((value) => new RegExp(regExp.value.slice(1,-1)).test(value.toString())) %}
 
 # (type)
-group -> %lp E %rp {% ([lp, expr, rp]) => expr %}
+group -> %lp T %rp {% ([lp, expr, rp]) => expr %}
 
 # !type
-negation -> %not E {% ([not, typeChecker]) => ((value) => (!typeChecker(value))) %}
+negation -> %not T {% ([not, typeChecker]) => ((value) => (!typeChecker(value))) %}
 
 # type1 & type2
-conjunction -> E %and E {% ([typeChecker1, and, typeChecker2]) => ((value) => (typeChecker1(value) && typeChecker2(value))) %}
+conjunction -> T %and T {% ([typeChecker1, and, typeChecker2]) => ((value) => (typeChecker1(value) && typeChecker2(value))) %}
 
 # type1 | type2
-disjunction -> E %or E {% ([typeChecker1, or, typeChecker2]) => ((value) => (typeChecker1(value) || typeChecker2(value))) %}
+disjunction -> T %or T {% ([typeChecker1, or, typeChecker2]) => ((value) => (typeChecker1(value) || typeChecker2(value))) %}
 
 # type1 - type2
-minus -> E %sub E {% ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value))) %}
+minus -> T %sub T {% ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value))) %}

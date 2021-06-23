@@ -27,14 +27,24 @@ const getAtomTypeChecker = type => (CHECKERS.get(type));
 var grammar = {
     Lexer: lexer,
     ParserRules: [
-    {"name": "E", "symbols": ["atom"], "postprocess": ([x]) => x},
-    {"name": "E", "symbols": ["regularExpr"], "postprocess": ([x]) => x},
-    {"name": "E", "symbols": ["group"], "postprocess": ([x]) => x},
-    {"name": "E", "symbols": ["negation"], "postprocess": ([x]) => x},
-    {"name": "E", "symbols": ["conjunction"], "postprocess": ([x]) => x},
-    {"name": "E", "symbols": ["disjunction"], "postprocess": ([x]) => x},
-    {"name": "E", "symbols": ["minus"], "postprocess": ([x]) => x},
-    {"name": "E", "symbols": ["inclusion"], "postprocess": ([x]) => x},
+    {"name": "E", "symbols": ["T"], "postprocess": ([expr]) => expr},
+    {"name": "E", "symbols": ["I"], "postprocess": ([expr]) => expr},
+    {"name": "T", "symbols": ["atom"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["regularExpr"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["group"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["negation"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["conjunction"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["disjunction"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["minus"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["inclusion"], "postprocess": ([x]) => x},
+    {"name": "I", "symbols": ["zeroPlusList"], "postprocess": ([expr]) => expr},
+    {"name": "zeroPlusList", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), "T", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess":  ([lsb, spread, typeChecker, rsb]) =>
+        (values) => {
+            return values.reduce(((acc, value) => (acc && typeChecker(value))), true) || false
+        }
+        },
+    {"name": "zeroPlusList", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([lsb, spread, rsb]) => ((values) => Array.isArray(values))},
+    {"name": "zeroPlusList", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("any") ? {type: "any"} : any), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([lsb, spread, rsb]) => ((values) => Array.isArray(values))},
     {"name": "atom", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xundefined") ? {type: "xundefined"} : xundefined)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
@@ -49,20 +59,21 @@ var grammar = {
     {"name": "atom", "symbols": [(lexer.has("char") ? {type: "char"} : char)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("byte") ? {type: "byte"} : byte)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("any") ? {type: "any"} : any)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "inclusion", "symbols": [(lexer.has("xin") ? {type: "xin"} : xin), (lexer.has("array") ? {type: "array"} : array)], "postprocess":  ([xin, array]) => {
+    {"name": "inclusion", "symbols": [(lexer.has("inArray") ? {type: "inArray"} : inArray)], "postprocess":  ([inArray]) => {
             // Note: we're deserializing here on purpose
             // so that any syntax error gets triggered
             // while parsing a "type", and not while
             // checking for a value
-            let arrayValues = JSON.parse(array.value);
+            console.log(inArray.value);
+            let arrayValues = JSON.parse(inArray.value.replace("in", "").trim());
             return ((value) => arrayValues.includes(value));
         } },
     {"name": "regularExpr", "symbols": [(lexer.has("regexp") ? {type: "regexp"} : regexp)], "postprocess": ([regExp]) => ((value) => new RegExp(regExp.value.slice(1,-1)).test(value.toString()))},
-    {"name": "group", "symbols": [(lexer.has("lp") ? {type: "lp"} : lp), "E", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([lp, expr, rp]) => expr},
-    {"name": "negation", "symbols": [(lexer.has("not") ? {type: "not"} : not), "E"], "postprocess": ([not, typeChecker]) => ((value) => (!typeChecker(value)))},
-    {"name": "conjunction", "symbols": ["E", (lexer.has("and") ? {type: "and"} : and), "E"], "postprocess": ([typeChecker1, and, typeChecker2]) => ((value) => (typeChecker1(value) && typeChecker2(value)))},
-    {"name": "disjunction", "symbols": ["E", (lexer.has("or") ? {type: "or"} : or), "E"], "postprocess": ([typeChecker1, or, typeChecker2]) => ((value) => (typeChecker1(value) || typeChecker2(value)))},
-    {"name": "minus", "symbols": ["E", (lexer.has("sub") ? {type: "sub"} : sub), "E"], "postprocess": ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value)))}
+    {"name": "group", "symbols": [(lexer.has("lp") ? {type: "lp"} : lp), "T", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([lp, expr, rp]) => expr},
+    {"name": "negation", "symbols": [(lexer.has("not") ? {type: "not"} : not), "T"], "postprocess": ([not, typeChecker]) => ((value) => (!typeChecker(value)))},
+    {"name": "conjunction", "symbols": ["T", (lexer.has("and") ? {type: "and"} : and), "T"], "postprocess": ([typeChecker1, and, typeChecker2]) => ((value) => (typeChecker1(value) && typeChecker2(value)))},
+    {"name": "disjunction", "symbols": ["T", (lexer.has("or") ? {type: "or"} : or), "T"], "postprocess": ([typeChecker1, or, typeChecker2]) => ((value) => (typeChecker1(value) || typeChecker2(value)))},
+    {"name": "minus", "symbols": ["T", (lexer.has("sub") ? {type: "sub"} : sub), "T"], "postprocess": ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value)))}
 ]
   , ParserStart: "E"
 }
