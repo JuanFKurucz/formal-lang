@@ -135,6 +135,25 @@ describe('combination', function() {
         }
         evaluate(new Type(this.title), possibleValues);
     });
+    describe('number | string', function() {
+        const possibleValues = [];
+        for (let e in values.any) {
+            const element = values.any[e];
+            for (let e in values.number) {
+                const element = values.number[e];
+                if (!Array.isArray(element) || element[1]) {
+                    possibleValues.push([Array.isArray(element) ? element[0] : element, true]);
+                }
+            }
+            for (let e in values.string) {
+                const element = values.string[e];
+                if (!Array.isArray(element) || element[1]) {
+                    possibleValues.push([Array.isArray(element) ? element[0] : element, true]);
+                }
+            }
+        }
+        evaluate(new Type(this.title), possibleValues);
+    });
 
     // for (let type1 in values) {
     //     for (let type2 in values) {
