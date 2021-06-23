@@ -2,7 +2,7 @@
     "name": "ut3ej2.4",
     "version": "1.0.0",
     "description": "",
-    "main": "mathp.js",
+    "main": "tyjs.js",
     "scripts": {
         "test": "mocha"
     },

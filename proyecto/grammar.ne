@@ -14,7 +14,7 @@ const CHECKERS = new Map([
     ["int", value => (typeof(value) === "number" && Number.isInteger(value))],
     ["double", value => (typeof(value) === "number" && !Number.isInteger(value))],
     ["char", value => (typeof(value) === "string" && value.length === 1)],
-    ["byte", value => (typeof(value) === "number" && value >= 0 && value <= 255)],
+    ["byte", value => (typeof(value) === "number" && value >= 0 && value <= 255 && parseInt(value) === value)],
     ["_", value => true],
     ["any", value => true],
 ]);
@@ -23,6 +23,9 @@ const getAtomTypeChecker = type => (CHECKERS.get(type));
 %}
 
 @lexer lexer
+
+# TODO generales:
+# - ver que valores de JS sean types también
 
 # Main
 E -> T {% ([expr]) => expr %}
@@ -40,15 +43,27 @@ T -> inclusion {% ([x]) => x %}
 
 # Iterables
 I -> zeroPlusList {% ([expr]) => expr %}
+I -> threeList {% ([threeList]) => threeList %}
 
 # TODO: move down
+# TODO: Esto y los [type1, type2, type3] hay que cambiarlos un poco para que se resuelva
+# con [ %separator ] y busque todos los tipos. Por ej. ...type sería
+# [...type]
 zeroPlusList -> %lsb %spread T %rsb {% ([lsb, spread, typeChecker, rsb]) =>
     (values) => {
         return values.reduce(((acc, value) => (acc && typeChecker(value))), true) || false
     }
 %}
+# []
 zeroPlusList -> %lsb %spread %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
+# [...]
 zeroPlusList -> %lsb %spread %any %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
+
+# [type1, type2, type3]
+threeList -> %lsb T %separator T %separator T %separator %rsb {% ([lsb, t1, t2, t3, rsb]) => (
+    ([v1, v2, v3]) => t1(v1) && t2(v2) && t3(v3)
+) %}
+
 
 # Atoms
 atom -> %number {% ([type]) => getAtomTypeChecker(type.value) %}
@@ -67,18 +82,27 @@ atom -> %byte {% ([type]) => getAtomTypeChecker(type.value) %}
 atom -> %any {% ([type]) => getAtomTypeChecker(type.value) %}
 
 # in [value1, value2]
-inclusion -> %inArray {% ([inArray]) => {
+inclusion -> %xin %lsb values:+ %rsb {% ([ xin, lsb, values, rsb]) => {
     // Note: we're deserializing here on purpose
-    // so that any syntax error gets triggered
-    // while parsing a "type", and not while
-    // checking for a value
-    console.log(inArray.value);
-    let arrayValues = JSON.parse(inArray.value.replace("in", "").trim());
+    // in order to throw an error while parsing
+    // console.log(`inclusion: ${JSON.stringify(values)}`);
+    // console.log(JSON.stringify(values[0]));
+    let arrayValues = values[0];
     return ((value) => arrayValues.includes(value));
 } %}
 
+# TODO: agregar %string y %number
+values -> values %separator value {% ([values, , value]) => {
+    // TODO: ver por qué creó otra lista
+    return [...values, ...value];
+} %}
+values -> value {% ([value]) => { return value; } %}
+value -> %booleans {% ([token]) => { return [JSON.parse(token.value)]; } %}
+
 # /{regexp}/
-regularExpr -> %regexp {% ([regExp]) => ((value) => new RegExp(regExp.value.slice(1,-1)).test(value.toString())) %}
+regularExpr -> %regexp {% ([regExp]) => ((value) => {
+    return (new RegExp(regExp.value.slice(1,-1)).test(value.toString()));
+}) %}
 
 # (type)
 group -> %lp T %rp {% ([lp, expr, rp]) => expr %}

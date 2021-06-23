@@ -18,8 +18,12 @@ const lexer = moo.compile({
 
     spread: ["..."],
 
-    regexp: /\/.*\//,
-    inArray: /in\s*\[.*\]/, // We have to use it like that because we are also matching arrays with %lsb and %rsb
+    regexp: /\/(?:[^\n\\\/]|\\[^\n])+\//, // TODO: \r o no?
+
+    xin: ["in"],
+    booleans: ["true", "false"],
+
+    separator: /,/,
 
     not: /!/,
     and: /&/,
