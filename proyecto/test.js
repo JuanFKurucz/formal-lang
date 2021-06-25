@@ -107,14 +107,6 @@ describe('atoms', function() {
     }
 });
 
-// describe('iterables', function() {
-//     const instance = new Type("[string, int, boolean]");
-//     const cases = [
-//         '["abc", 25, true]',
-//     ];
-//     evaluate(instance, cases);
-// });
-
 describe('combination', function() {
     for (let type in values) {
         describe(`!${type}`, function() {
@@ -175,4 +167,68 @@ describe('combination', function() {
     //         });
     //     }
     // }
+});
+
+// TODO: tests para regex y algunos combinaciones
+
+describe('values', function() {
+    evaluate(
+        new Type("boolean & true"), [
+            [false, false],
+            [true, true],
+        ]
+    );
+    evaluate(
+        new Type("true | false"), [
+            [false, true],
+            [true, true],
+        ]
+    );
+    // TODO: tests para strings y numbers
+});
+
+describe('inclusions', function() {
+    evaluate(
+        new Type("boolean & in [true, true, true]"), [
+            [false, false],
+            [true, true],
+        ]
+    );
+    evaluate(
+        new Type("in [false, false, true]"), [
+            [false, true],
+            [true, true],
+        ]
+    );
+    // TODO: tests para strings y numbers
+});
+
+describe('iterables', function() {
+    evaluate(
+        new Type("[...any]"), [
+            [
+                [false], true
+            ],
+            [
+                ["aaa", true], true
+            ],
+            [
+                [], true
+            ]
+        ]
+    );
+    evaluate(
+        new Type("[...]"), [
+            [
+                [false], true
+            ],
+            [
+                ["aaa", true], true
+            ],
+            [
+                [], true
+            ]
+        ]
+    );
+    // TODO: Tests para todos los spread
 });

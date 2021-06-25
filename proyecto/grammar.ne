@@ -40,30 +40,28 @@ T -> conjunction {% ([x]) => x %}
 T -> disjunction {% ([x]) => x %}
 T -> minus {% ([x]) => x %}
 T -> inclusion {% ([x]) => x %}
+T -> valueCheck {% ([x]) => x %}
 
 # Iterables
-I -> zeroPlusList {% ([expr]) => expr %}
-I -> threeList {% ([threeList]) => threeList %}
+I -> list {% ([expr]) => expr %}
 
 # TODO: move down
-# TODO: Esto y los [type1, type2, type3] hay que cambiarlos un poco para que se resuelva
-# con [ %separator ] y busque todos los tipos. Por ej. ...type sería
-# [...type]
-zeroPlusList -> %lsb %spread T %rsb {% ([lsb, spread, typeChecker, rsb]) =>
-    (values) => {
-        return values.reduce(((acc, value) => (acc && typeChecker(value))), true) || false
-    }
-%}
-# []
-zeroPlusList -> %lsb %spread %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
-# [...]
-zeroPlusList -> %lsb %spread %any %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
+list -> %lsb listValues %rsb {% ([, typeCheckers, ]) => {
+    console.log(typeCheckers);
+    return ((values) => {
+        // Qué sería typeChecker....
+        //return values.reduce(((acc, value) => (acc && typeChecker(value))), true) || false
+    })
+} %}
 
-# [type1, type2, type3]
-threeList -> %lsb T %separator T %separator T %separator %rsb {% ([lsb, t1, t2, t3, rsb]) => (
-    ([v1, v2, v3]) => t1(v1) && t2(v2) && t3(v3)
-) %}
-
+listValues -> listValues %separator listValue {% ([typeCheckers, , typeChecker]) => { return [...typeCheckers, ...typeChecker]; } %}
+listValues -> listValue {% ([type]) => type } %}
+# ...
+listValue -> %spread {% ([typeChecker]) => [((values) => Array.isArray(values))] %}
+# ...any
+listValue -> %spread %any {% ([typeChecker]) => [((values) => Array.isArray(values))] %}
+# any type, values or their combinations (any "T")
+listValue -> T {% ([typeChecker]) => [typeChecker] %}
 
 # Atoms
 atom -> %number {% ([type]) => getAtomTypeChecker(type.value) %}
@@ -82,22 +80,20 @@ atom -> %byte {% ([type]) => getAtomTypeChecker(type.value) %}
 atom -> %any {% ([type]) => getAtomTypeChecker(type.value) %}
 
 # in [value1, value2]
-inclusion -> %xin %lsb values:+ %rsb {% ([ xin, lsb, values, rsb]) => {
+inclusion -> %xin %lsb values %rsb {% ([ , , values, ]) => {
     // Note: we're deserializing here on purpose
     // in order to throw an error while parsing
-    // console.log(`inclusion: ${JSON.stringify(values)}`);
-    // console.log(JSON.stringify(values[0]));
-    let arrayValues = values[0];
-    return ((value) => arrayValues.includes(value));
+    return ((value) => values.includes(value));
 } %}
 
-# TODO: agregar %string y %number
-values -> values %separator value {% ([values, , value]) => {
-    // TODO: ver por qué creó otra lista
-    return [...values, ...value];
-} %}
+values -> values %separator value {% ([values, , value]) => { return [...values, ...value]; } %}
 values -> value {% ([value]) => { return value; } %}
+# TODO: agregar %strings y %numbers
 value -> %booleans {% ([token]) => { return [JSON.parse(token.value)]; } %}
+
+# javascript values (string, boolean or number)
+# TODO: agregar %strings y %numbers
+valueCheck -> %booleans {% ([token]) => ((value) => (value === JSON.parse(token.value))) %}
 
 # /{regexp}/
 regularExpr -> %regexp {% ([regExp]) => ((value) => {

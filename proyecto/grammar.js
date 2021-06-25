@@ -37,8 +37,8 @@ var grammar = {
     {"name": "T", "symbols": ["disjunction"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["minus"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["inclusion"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["valueCheck"], "postprocess": ([x]) => x},
     {"name": "I", "symbols": ["zeroPlusList"], "postprocess": ([expr]) => expr},
-    {"name": "I", "symbols": ["threeList"], "postprocess": ([threeList]) => threeList},
     {"name": "zeroPlusList", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), "T", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess":  ([lsb, spread, typeChecker, rsb]) =>
         (values) => {
             return values.reduce(((acc, value) => (acc && typeChecker(value))), true) || false
@@ -46,9 +46,6 @@ var grammar = {
         },
     {"name": "zeroPlusList", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([lsb, spread, rsb]) => ((values) => Array.isArray(values))},
     {"name": "zeroPlusList", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("any") ? {type: "any"} : any), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([lsb, spread, rsb]) => ((values) => Array.isArray(values))},
-    {"name": "threeList", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), "T", (lexer.has("separator") ? {type: "separator"} : separator), "T", (lexer.has("separator") ? {type: "separator"} : separator), "T", (lexer.has("separator") ? {type: "separator"} : separator), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess":  ([lsb, t1, t2, t3, rsb]) => (
-            ([v1, v2, v3]) => t1(v1) && t2(v2) && t3(v3)
-        ) },
     {"name": "atom", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xundefined") ? {type: "xundefined"} : xundefined)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
@@ -63,29 +60,15 @@ var grammar = {
     {"name": "atom", "symbols": [(lexer.has("char") ? {type: "char"} : char)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("byte") ? {type: "byte"} : byte)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("any") ? {type: "any"} : any)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "inclusion$ebnf$1", "symbols": ["values"]},
-    {"name": "inclusion$ebnf$1", "symbols": ["inclusion$ebnf$1", "values"], "postprocess": function arrpush(d) {return d[0].concat([d[1]]);}},
-    {"name": "inclusion", "symbols": [(lexer.has("xin") ? {type: "xin"} : xin), (lexer.has("lsb") ? {type: "lsb"} : lsb), "inclusion$ebnf$1", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess":  ([ xin, lsb, values, rsb]) => {
+    {"name": "inclusion", "symbols": [(lexer.has("xin") ? {type: "xin"} : xin), (lexer.has("lsb") ? {type: "lsb"} : lsb), "values", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess":  ([ , , values, ]) => {
             // Note: we're deserializing here on purpose
             // in order to throw an error while parsing
-            // console.log(inArray.value);
-            // let arrayValues = JSON.parse(inArray.value.replace("in", "").trim());
-            // return ((value) => arrayValues.includes(value));
-            if (!values) return ((value) => false);
-        
-            // Note: we're deserializing here on purpose
-            // in order to throw an error while parsing
-            // console.log(`inclusion: ${JSON.stringify(values)}`);
-            console.log(JSON.stringify(values));
-            let arrayValues = values;
-            return ((value) => arrayValues.includes(value));
+            return ((value) => values.includes(value));
         } },
-    {"name": "values", "symbols": ["values", (lexer.has("separator") ? {type: "separator"} : separator), "value"], "postprocess":  ([values, , value]) => {
-            // TODO: ver por qué creó otra lista
-            return [...values, ...value][0];
-        } },
+    {"name": "values", "symbols": ["values", (lexer.has("separator") ? {type: "separator"} : separator), "value"], "postprocess": ([values, , value]) => { return [...values, ...value]; }},
     {"name": "values", "symbols": ["value"], "postprocess": ([value]) => { return value; }},
     {"name": "value", "symbols": [(lexer.has("booleans") ? {type: "booleans"} : booleans)], "postprocess": ([token]) => { return [JSON.parse(token.value)]; }},
+    {"name": "valueCheck", "symbols": [(lexer.has("booleans") ? {type: "booleans"} : booleans)], "postprocess": ([token]) => ((value) => (value === JSON.parse(token.value)))},
     {"name": "regularExpr", "symbols": [(lexer.has("regexp") ? {type: "regexp"} : regexp)], "postprocess":  ([regExp]) => ((value) => {
             return (new RegExp(regExp.value.slice(1,-1)).test(value.toString()));
         }) },

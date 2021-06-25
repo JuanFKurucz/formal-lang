@@ -41,15 +41,6 @@ class Type {
 
 }
 
-instance = new Type("in [false, false, false, true]", true);
-// console.log(instance.checks(5));
-// console.log(instance.checks("123"));
-// console.log(instance.checks(true));
-// console.log(!instance.checks("abc"));
-// console.log(instance.checks(5));
-// console.log(instance.checks("123"));
-console.log(instance.checks(true));
-
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = Type;
 } else {
