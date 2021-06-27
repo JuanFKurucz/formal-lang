@@ -101,45 +101,38 @@ disjunction -> T %or T {% ([typeChecker1, or, typeChecker2]) => ((value) => (typ
 # type1 - type2
 minus -> T %sub T {% ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value))) %}
 
-
-list -> %lsb %spread %any %rsb {% ([lsb, spread, any, rsb]) => ((values) => Array.isArray(values)) %}
+# [...]
 list -> %lsb %spread %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
 
 # TODO: preguntar si tenemos que revisar que no se repitan o simplemente dejar que retorne false
 # los tipos. Por ej. (...type1, type1, type2), acá type1 es ambiguo
+# non-any list
+# e.g.: [boolean, ...string, boolean]
 list -> %lsb listValues %rsb {% ([, typeCheckers, ]) => {
     return ((values) => {
         let v = 0; // index of current value
         console.log(typeCheckers);
         for (let c = 0; c < typeCheckers.length; c++) {
-            const value = values[v];                    // current value to check
-            console.log(`value: ${value}`);
+            console.log(`value: ${values[v]}`);
             const currentChecker = typeCheckers[c];     // current checker function
-            const nextChecker = typeCheckers[c + 1];    // next checker function
 
             switch (typeCheckers[c].type) {
                 case "zeroPlus":
                     console.log("zeroPlus...");
-
                     // Try to check until it finds a mismatch
                     while (currentChecker.checker(values[v])) {
                         v++;
                         if (values[v] === undefined) break;
                     };
-
                     break;
-                    
                 case "one":
                     console.log("one...")
-                    if (value === undefined) return false;              // No values left so it's a mismatch
-                    if (!currentChecker.checker(value)) return false;   // Value doesn't match type
+                    if (values[v] === undefined) return false;              // No values left so it's a mismatch
+                    if (!currentChecker.checker(values[v])) return false;   // Value doesn't match type
                     v++;
-
                     break;
             }
         }
-
-        // console.log(`v = ${v}, values.length = ${values.length}`);
         return values.length == 0 ? true : (v == values.length);
     })
 } %}
@@ -148,6 +141,14 @@ listValues -> listValues %separator listValue {% ([typeCheckers, , typeChecker])
     return [...typeCheckers, ...typeChecker];
 } %}
 listValues -> listValue {% ([type]) => type %}
+# ...n * type
+listValue -> %spread %integer %mult T {% ([ , n, , typeChecker]) => {
+    // Just append it n times
+    return Array(parseInt(n)).fill({
+        checker: typeChecker,
+        type: "one"
+    });
+} %}
 # ...type
 listValue -> %spread T {% ([ , typeChecker]) => {
     return [{

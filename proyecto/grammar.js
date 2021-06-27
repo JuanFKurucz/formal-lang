@@ -3,6 +3,9 @@
 (function () {
 function id(x) { return x[0]; }
 
+
+// TODO: Comentar todos los console logs!!!
+
 const lexer = require("./lexer.js");
 
 const CHECKERS = new Map([
@@ -74,41 +77,32 @@ var grammar = {
     {"name": "conjunction", "symbols": ["T", (lexer.has("and") ? {type: "and"} : and), "T"], "postprocess": ([typeChecker1, and, typeChecker2]) => ((value) => (typeChecker1(value) && typeChecker2(value)))},
     {"name": "disjunction", "symbols": ["T", (lexer.has("or") ? {type: "or"} : or), "T"], "postprocess": ([typeChecker1, or, typeChecker2]) => ((value) => (typeChecker1(value) || typeChecker2(value)))},
     {"name": "minus", "symbols": ["T", (lexer.has("sub") ? {type: "sub"} : sub), "T"], "postprocess": ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value)))},
-    {"name": "list", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("any") ? {type: "any"} : any), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([lsb, spread, any, rsb]) => ((values) => Array.isArray(values))},
     {"name": "list", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([lsb, spread, rsb]) => ((values) => Array.isArray(values))},
     {"name": "list", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), "listValues", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess":  ([, typeCheckers, ]) => {
             return ((values) => {
                 let v = 0; // index of current value
                 console.log(typeCheckers);
                 for (let c = 0; c < typeCheckers.length; c++) {
-                    const value = values[v];                    // current value to check
-                    console.log(`value: ${value}`);
+                    console.log(`value: ${values[v]}`);
                     const currentChecker = typeCheckers[c];     // current checker function
-                    const nextChecker = typeCheckers[c + 1];    // next checker function
         
                     switch (typeCheckers[c].type) {
                         case "zeroPlus":
                             console.log("zeroPlus...");
-        
                             // Try to check until it finds a mismatch
                             while (currentChecker.checker(values[v])) {
                                 v++;
                                 if (values[v] === undefined) break;
                             };
-        
                             break;
-                            
                         case "one":
                             console.log("one...")
-                            if (value === undefined) return false;              // No values left so it's a mismatch
-                            if (!currentChecker.checker(value)) return false;   // Value doesn't match type
+                            if (values[v] === undefined) return false;              // No values left so it's a mismatch
+                            if (!currentChecker.checker(values[v])) return false;   // Value doesn't match type
                             v++;
-        
                             break;
                     }
                 }
-        
-                // console.log(`v = ${v}, values.length = ${values.length}`);
                 return values.length == 0 ? true : (v == values.length);
             })
         } },
@@ -116,6 +110,13 @@ var grammar = {
             return [...typeCheckers, ...typeChecker];
         } },
     {"name": "listValues", "symbols": ["listValue"], "postprocess": ([type]) => type},
+    {"name": "listValue", "symbols": [(lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("integer") ? {type: "integer"} : integer), (lexer.has("mult") ? {type: "mult"} : mult), "T"], "postprocess":  ([ , n, , typeChecker]) => {
+            // Just append it n times
+            return Array(parseInt(n)).fill({
+                checker: typeChecker,
+                type: "one"
+            });
+        } },
     {"name": "listValue", "symbols": [(lexer.has("spread") ? {type: "spread"} : spread), "T"], "postprocess":  ([ , typeChecker]) => {
             return [{
                 checker: typeChecker,

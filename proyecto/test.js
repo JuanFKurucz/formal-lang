@@ -265,4 +265,30 @@ describe('iterables', function() {
             ],
         ]
     );
+    evaluate(
+        new Type("[string, ...2 * boolean, string]"), [
+            [
+                ["abc", false, false, "abc"], true
+            ],
+            [
+                ["abc", false, false, true, "abc"], false
+            ],
+        ]
+    );
+    evaluate(
+        new Type("[...3 * boolean]"), [
+            [
+                ["abc", false, false, true], false
+            ],
+            [
+                [false, false, true], true
+            ],
+            [
+                [false, false, true, "abc"], false
+            ],
+            [
+                [false, false], false
+            ],
+        ]
+    );
 });

@@ -38,6 +38,8 @@ const lexer = moo.compile({
     lsb: /\[/,
     rsb: /\]/,
 
+    integer: /[0-9]+/,
+
     ws: { match: /\s+/, lineBreaks: true },
 });
 
