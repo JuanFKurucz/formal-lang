@@ -1,10 +1,15 @@
 @{%
+
+// TODO: Comentar todos los console logs!!!
+
 const lexer = require("./lexer.js");
 
 const CHECKERS = new Map([
     ["number", value => typeof(value) === "number"],
     ["undefined", value => typeof(value) === "undefined"],
-    ["boolean", value => typeof(value) === "boolean"],
+    ["boolean", value => {
+        return (typeof(value) === "boolean");
+    }],
     ["string", value => typeof(value) === "string"],
     ["function", value => typeof(value) === "function"],
     ["object", value => typeof(value) === "object"],
@@ -24,9 +29,6 @@ const getAtomTypeChecker = type => (CHECKERS.get(type));
 
 @lexer lexer
 
-# TODO generales:
-# - ver que valores de JS sean types también
-
 # Main
 E -> T {% ([expr]) => expr %}
 E -> I {% ([expr]) => expr %}
@@ -44,24 +46,6 @@ T -> valueCheck {% ([x]) => x %}
 
 # Iterables
 I -> list {% ([expr]) => expr %}
-
-# TODO: move down
-list -> %lsb listValues %rsb {% ([, typeCheckers, ]) => {
-    console.log(typeCheckers);
-    return ((values) => {
-        // Qué sería typeChecker....
-        //return values.reduce(((acc, value) => (acc && typeChecker(value))), true) || false
-    })
-} %}
-
-listValues -> listValues %separator listValue {% ([typeCheckers, , typeChecker]) => { return [...typeCheckers, ...typeChecker]; } %}
-listValues -> listValue {% ([type]) => type } %}
-# ...
-listValue -> %spread {% ([typeChecker]) => [((values) => Array.isArray(values))] %}
-# ...any
-listValue -> %spread %any {% ([typeChecker]) => [((values) => Array.isArray(values))] %}
-# any type, values or their combinations (any "T")
-listValue -> T {% ([typeChecker]) => [typeChecker] %}
 
 # Atoms
 atom -> %number {% ([type]) => getAtomTypeChecker(type.value) %}
@@ -81,15 +65,17 @@ atom -> %any {% ([type]) => getAtomTypeChecker(type.value) %}
 
 # in [value1, value2]
 inclusion -> %xin %lsb values %rsb {% ([ , , values, ]) => {
-    // Note: we're deserializing here on purpose
-    // in order to throw an error while parsing
     return ((value) => values.includes(value));
 } %}
 
 values -> values %separator value {% ([values, , value]) => { return [...values, ...value]; } %}
 values -> value {% ([value]) => { return value; } %}
 # TODO: agregar %strings y %numbers
-value -> %booleans {% ([token]) => { return [JSON.parse(token.value)]; } %}
+value -> %booleans {% ([token]) => {
+    // Note: we're deserializing here on purpose
+    // in order to throw an error while parsing
+    return [JSON.parse(token.value)];
+} %}
 
 # javascript values (string, boolean or number)
 # TODO: agregar %strings y %numbers
@@ -114,3 +100,66 @@ disjunction -> T %or T {% ([typeChecker1, or, typeChecker2]) => ((value) => (typ
 
 # type1 - type2
 minus -> T %sub T {% ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value))) %}
+
+
+list -> %lsb %spread %any %rsb {% ([lsb, spread, any, rsb]) => ((values) => Array.isArray(values)) %}
+list -> %lsb %spread %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
+
+# TODO: preguntar si tenemos que revisar que no se repitan o simplemente dejar que retorne false
+# los tipos. Por ej. (...type1, type1, type2), acá type1 es ambiguo
+list -> %lsb listValues %rsb {% ([, typeCheckers, ]) => {
+    return ((values) => {
+        let v = 0; // index of current value
+        console.log(typeCheckers);
+        for (let c = 0; c < typeCheckers.length; c++) {
+            const value = values[v];                    // current value to check
+            console.log(`value: ${value}`);
+            const currentChecker = typeCheckers[c];     // current checker function
+            const nextChecker = typeCheckers[c + 1];    // next checker function
+
+            switch (typeCheckers[c].type) {
+                case "zeroPlus":
+                    console.log("zeroPlus...");
+
+                    // Try to check until it finds a mismatch
+                    while (currentChecker.checker(values[v])) {
+                        v++;
+                        if (values[v] === undefined) break;
+                    };
+
+                    break;
+                    
+                case "one":
+                    console.log("one...")
+                    if (value === undefined) return false;              // No values left so it's a mismatch
+                    if (!currentChecker.checker(value)) return false;   // Value doesn't match type
+                    v++;
+
+                    break;
+            }
+        }
+
+        // console.log(`v = ${v}, values.length = ${values.length}`);
+        return values.length == 0 ? true : (v == values.length);
+    })
+} %}
+
+listValues -> listValues %separator listValue {% ([typeCheckers, , typeChecker]) => {
+    return [...typeCheckers, ...typeChecker];
+} %}
+listValues -> listValue {% ([type]) => type %}
+# ...type
+listValue -> %spread T {% ([ , typeChecker]) => {
+    return [{
+        checker: typeChecker,
+        type: "zeroPlus"
+    }];
+} %}
+# any type, values or their combinations (any "T")
+listValue -> T {% ([typeChecker]) => {
+    return [{
+        checker: typeChecker,
+        type: "one"
+    }];
+} %}
+# TODO: ...n * type

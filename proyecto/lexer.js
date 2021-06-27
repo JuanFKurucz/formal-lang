@@ -30,6 +30,8 @@ const lexer = moo.compile({
     or: /\|/,
     sub: /-/,
 
+    mult: /\*/,
+
     lp: /\(/,
     rp: /\)/,
 

@@ -41,6 +41,15 @@ class Type {
 
 }
 
+let instance = new Type("[string, ...boolean, string]");
+// console.log(instance.checks(["abc", true, false, true, "abc"]));
+
+// instance = new Type("[string, boolean, string]");
+// console.log(instance.checks(["abc", true, "abc"]));
+
+instance = new Type("[...any]");
+console.log(instance.checks([]));
+
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = Type;
 } else {

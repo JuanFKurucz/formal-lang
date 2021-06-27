@@ -230,5 +230,39 @@ describe('iterables', function() {
             ]
         ]
     );
-    // TODO: Tests para todos los spread
+    evaluate(
+        new Type("[...boolean]"), [
+            [
+                [false, false, true], true
+            ],
+            [
+                [], true
+            ],
+            [
+                ["abc", true], false
+            ],
+            [
+                [true, "abc"], false
+            ],
+        ]
+    );
+    evaluate(
+        new Type("[string, ...boolean, string]"), [
+            [
+                ["abc", false, false, true, "abc"], true
+            ],
+            [
+                ["abc", "abc"], true
+            ],
+            [
+                ["abc", true, "abc"], true
+            ],
+            [
+                ["abc", true, false], false
+            ],
+            [
+                ["abc"], false
+            ],
+        ]
+    );
 });
