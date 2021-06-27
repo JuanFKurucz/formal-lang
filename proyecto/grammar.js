@@ -8,7 +8,7 @@ function id(x) { return x[0]; }
 
 const lexer = require("./lexer.js");
 
-const CHECKERS = new Map([
+const atomCheckers = new Map([
     ["number", value => typeof(value) === "number"],
     ["undefined", value => typeof(value) === "undefined"],
     ["boolean", value => {
@@ -28,12 +28,44 @@ const CHECKERS = new Map([
     ["any", value => true],
 ]);
 
-const getAtomTypeChecker = type => (CHECKERS.get(type));
+const atomChecker = type => (atomCheckers.get(type));
+
+const iterationChecker = typeCheckers => {
+    return (values => {
+
+        // TODO: casos particulares:
+        // - si es Map, lo transformamos en lista de listas
+        // - si es set, transformamos en lista
+
+        let v = 0; // index of current value
+        for (let c = 0; c < typeCheckers.length; c++) {
+            const currentChecker = typeCheckers[c]; // current checker function
+
+            switch (typeCheckers[c].type) {
+                case "zeroPlus":
+                    if (values[v] === undefined) break;
+
+                    // Try to check until it finds a mismatch
+                    while (currentChecker.checker(values[v])) {
+                        v++;
+                        if (values[v] === undefined) break;
+                    };
+                    break;
+                case "one":
+                    if (values[v] === undefined) return false;              // No values left so it's a mismatch
+                    if (!currentChecker.checker(values[v])) return false;   // Value doesn't match type
+                    v++;
+                    break;
+            }
+        }
+        return values.length == 0 ? true : (v == values.length);
+    })
+}
 var grammar = {
     Lexer: lexer,
     ParserRules: [
     {"name": "E", "symbols": ["T"], "postprocess": ([expr]) => expr},
-    {"name": "E", "symbols": ["I"], "postprocess": ([expr]) => expr},
+    {"name": "E", "symbols": ["O"], "postprocess": ([expr]) => expr},
     {"name": "T", "symbols": ["atom"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["regularExpr"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["group"], "postprocess": ([x]) => x},
@@ -43,21 +75,24 @@ var grammar = {
     {"name": "T", "symbols": ["minus"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["inclusion"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["valueCheck"], "postprocess": ([x]) => x},
-    {"name": "I", "symbols": ["list"], "postprocess": ([expr]) => expr},
-    {"name": "atom", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("xundefined") ? {type: "xundefined"} : xundefined)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("string") ? {type: "string"} : string)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("xfunction") ? {type: "xfunction"} : xfunction)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("object") ? {type: "object"} : object)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("symbol") ? {type: "symbol"} : symbol)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("bigint") ? {type: "bigint"} : bigint)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("xvoid") ? {type: "xvoid"} : xvoid)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("int") ? {type: "int"} : int)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("double") ? {type: "double"} : double)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("char") ? {type: "char"} : char)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("byte") ? {type: "byte"} : byte)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("any") ? {type: "any"} : any)], "postprocess": ([type]) => getAtomTypeChecker(type.value)},
+    {"name": "T", "symbols": ["list"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["objectConstruct"], "postprocess": ([x]) => x},
+    {"name": "O", "symbols": ["object"], "postprocess": ([expr]) => expr},
+    {"name": "objectConstruct", "symbols": [(lexer.has("upperCaseChar") ? {type: "upperCaseChar"} : upperCaseChar)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("xundefined") ? {type: "xundefined"} : xundefined)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("string") ? {type: "string"} : string)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("xfunction") ? {type: "xfunction"} : xfunction)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("object") ? {type: "object"} : object)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("symbol") ? {type: "symbol"} : symbol)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("bigint") ? {type: "bigint"} : bigint)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("xvoid") ? {type: "xvoid"} : xvoid)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("int") ? {type: "int"} : int)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("double") ? {type: "double"} : double)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("char") ? {type: "char"} : char)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("byte") ? {type: "byte"} : byte)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("any") ? {type: "any"} : any)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "inclusion", "symbols": [(lexer.has("xin") ? {type: "xin"} : xin), (lexer.has("lsb") ? {type: "lsb"} : lsb), "values", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess":  ([ , , values, ]) => {
             return ((value) => values.includes(value));
         } },
@@ -78,34 +113,7 @@ var grammar = {
     {"name": "disjunction", "symbols": ["T", (lexer.has("or") ? {type: "or"} : or), "T"], "postprocess": ([typeChecker1, or, typeChecker2]) => ((value) => (typeChecker1(value) || typeChecker2(value)))},
     {"name": "minus", "symbols": ["T", (lexer.has("sub") ? {type: "sub"} : sub), "T"], "postprocess": ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value)))},
     {"name": "list", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([lsb, spread, rsb]) => ((values) => Array.isArray(values))},
-    {"name": "list", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), "listValues", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess":  ([, typeCheckers, ]) => {
-            return ((values) => {
-                let v = 0; // index of current value
-                console.log(typeCheckers);
-                for (let c = 0; c < typeCheckers.length; c++) {
-                    console.log(`value: ${values[v]}`);
-                    const currentChecker = typeCheckers[c];     // current checker function
-        
-                    switch (typeCheckers[c].type) {
-                        case "zeroPlus":
-                            console.log("zeroPlus...");
-                            // Try to check until it finds a mismatch
-                            while (currentChecker.checker(values[v])) {
-                                v++;
-                                if (values[v] === undefined) break;
-                            };
-                            break;
-                        case "one":
-                            console.log("one...")
-                            if (values[v] === undefined) return false;              // No values left so it's a mismatch
-                            if (!currentChecker.checker(values[v])) return false;   // Value doesn't match type
-                            v++;
-                            break;
-                    }
-                }
-                return values.length == 0 ? true : (v == values.length);
-            })
-        } },
+    {"name": "list", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), "listValues", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([, typeCheckers, ]) => iterationChecker(typeCheckers)},
     {"name": "listValues", "symbols": ["listValues", (lexer.has("separator") ? {type: "separator"} : separator), "listValue"], "postprocess":  ([typeCheckers, , typeChecker]) => {
             return [...typeCheckers, ...typeChecker];
         } },

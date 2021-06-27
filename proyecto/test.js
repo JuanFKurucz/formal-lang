@@ -291,4 +291,36 @@ describe('iterables', function() {
             ],
         ]
     );
+    evaluate(
+        new Type("[...3 * /[abc]+/]"), [
+            [
+                ["abc", "abc", "abc"], true
+            ],
+            [
+                ["abc", "abc", "def"], false
+            ],
+        ]
+    );
+    evaluate(
+        new Type("[...[boolean, string]]"), [
+            [
+                [
+                    [true, "abc"]
+                ], true
+            ],
+            [
+                [
+                    [true, "abc"],
+                    [true, "abc"]
+                ], true
+            ],
+            [
+                [
+                    [true, "abc"],
+                    [true, "abc"],
+                    ["abc", true]
+                ], false
+            ],
+        ]
+    );
 });

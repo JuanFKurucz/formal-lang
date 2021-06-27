@@ -47,8 +47,11 @@ let instance = new Type("[string, ...boolean, string]");
 // instance = new Type("[string, boolean, string]");
 // console.log(instance.checks(["abc", true, "abc"]));
 
-instance = new Type("[...3 * boolean]", true);
-console.log(instance.checks([true, true, false]));
+instance = new Type("[...2*[boolean, string]]", true);
+console.log(instance.checks([
+    [true, "abc"],
+    [true, "abc"],
+]));
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = Type;

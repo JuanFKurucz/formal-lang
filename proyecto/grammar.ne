@@ -4,7 +4,7 @@
 
 const lexer = require("./lexer.js");
 
-const CHECKERS = new Map([
+const atomCheckers = new Map([
     ["number", value => typeof(value) === "number"],
     ["undefined", value => typeof(value) === "undefined"],
     ["boolean", value => {
@@ -24,14 +24,47 @@ const CHECKERS = new Map([
     ["any", value => true],
 ]);
 
-const getAtomTypeChecker = type => (CHECKERS.get(type));
+const atomChecker = type => (atomCheckers.get(type));
+
+const iterationChecker = typeCheckers => {
+    return (values => {
+
+        // TODO: casos particulares:
+        // - si es Map, lo transformamos en lista de listas
+        // - si es set, transformamos en lista
+
+        let v = 0; // index of current value
+        for (let c = 0; c < typeCheckers.length; c++) {
+            const currentChecker = typeCheckers[c]; // current checker function
+
+            switch (typeCheckers[c].type) {
+                case "zeroPlus":
+                    if (values[v] === undefined) break;
+
+                    // Try to check until it finds a mismatch
+                    while (currentChecker.checker(values[v])) {
+                        v++;
+                        if (values[v] === undefined) break;
+                    };
+                    break;
+                case "one":
+                    if (values[v] === undefined) return false;              // No values left so it's a mismatch
+                    if (!currentChecker.checker(values[v])) return false;   // Value doesn't match type
+                    v++;
+                    break;
+            }
+        }
+        return values.length == 0 ? true : (v == values.length);
+    })
+}
 %}
 
 @lexer lexer
 
 # Main
 E -> T {% ([expr]) => expr %}
-E -> I {% ([expr]) => expr %}
+# E -> I {% ([expr]) => expr %}
+E -> O {% ([expr]) => expr %}
 
 # Types and their combinations
 T -> atom {% ([x]) => x %}
@@ -43,25 +76,33 @@ T -> disjunction {% ([x]) => x %}
 T -> minus {% ([x]) => x %}
 T -> inclusion {% ([x]) => x %}
 T -> valueCheck {% ([x]) => x %}
+T -> list {% ([x]) => x %}
+T -> objectConstruct {% ([x]) => x %}
 
 # Iterables
-I -> list {% ([expr]) => expr %}
+# I -> list {% ([expr]) => expr %}
+
+# Objects
+O -> object {% ([expr]) => expr %}
+
+# TODO: mover
+objectConstruct -> %upperCaseChar {% ([type]) => atomChecker(type.value) %}
 
 # Atoms
-atom -> %number {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %xundefined {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %boolean {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %string {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %xfunction {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %object {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %symbol {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %bigint {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %xvoid {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %int {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %double {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %char {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %byte {% ([type]) => getAtomTypeChecker(type.value) %}
-atom -> %any {% ([type]) => getAtomTypeChecker(type.value) %}
+atom -> %number {% ([type]) => atomChecker(type.value) %}
+atom -> %xundefined {% ([type]) => atomChecker(type.value) %}
+atom -> %boolean {% ([type]) => atomChecker(type.value) %}
+atom -> %string {% ([type]) => atomChecker(type.value) %}
+atom -> %xfunction {% ([type]) => atomChecker(type.value) %}
+atom -> %object {% ([type]) => atomChecker(type.value) %}
+atom -> %symbol {% ([type]) => atomChecker(type.value) %}
+atom -> %bigint {% ([type]) => atomChecker(type.value) %}
+atom -> %xvoid {% ([type]) => atomChecker(type.value) %}
+atom -> %int {% ([type]) => atomChecker(type.value) %}
+atom -> %double {% ([type]) => atomChecker(type.value) %}
+atom -> %char {% ([type]) => atomChecker(type.value) %}
+atom -> %byte {% ([type]) => atomChecker(type.value) %}
+atom -> %any {% ([type]) => atomChecker(type.value) %}
 
 # in [value1, value2]
 inclusion -> %xin %lsb values %rsb {% ([ , , values, ]) => {
@@ -108,35 +149,7 @@ list -> %lsb %spread %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(
 # los tipos. Por ej. (...type1, type1, type2), acá type1 es ambiguo
 # non-any list
 # e.g.: [boolean, ...string, boolean]
-list -> %lsb listValues %rsb {% ([, typeCheckers, ]) => {
-    return ((values) => {
-        let v = 0; // index of current value
-        console.log(typeCheckers);
-        for (let c = 0; c < typeCheckers.length; c++) {
-            console.log(`value: ${values[v]}`);
-            const currentChecker = typeCheckers[c];     // current checker function
-
-            switch (typeCheckers[c].type) {
-                case "zeroPlus":
-                    console.log("zeroPlus...");
-                    // Try to check until it finds a mismatch
-                    while (currentChecker.checker(values[v])) {
-                        v++;
-                        if (values[v] === undefined) break;
-                    };
-                    break;
-                case "one":
-                    console.log("one...")
-                    if (values[v] === undefined) return false;              // No values left so it's a mismatch
-                    if (!currentChecker.checker(values[v])) return false;   // Value doesn't match type
-                    v++;
-                    break;
-            }
-        }
-        return values.length == 0 ? true : (v == values.length);
-    })
-} %}
-
+list -> %lsb listValues %rsb {% ([, typeCheckers, ]) => iterationChecker(typeCheckers) %}
 listValues -> listValues %separator listValue {% ([typeCheckers, , typeChecker]) => {
     return [...typeCheckers, ...typeChecker];
 } %}
@@ -163,4 +176,3 @@ listValue -> T {% ([typeChecker]) => {
         type: "one"
     }];
 } %}
-# TODO: ...n * type
