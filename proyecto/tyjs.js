@@ -1,6 +1,5 @@
 const nearley = require("nearley");
 const grammar = require("./grammar.js");
-const lexer = require('./lexer.js');
 
 class Type {
 
@@ -9,7 +8,7 @@ class Type {
      * @param {string} type a type(s) expression
      * @param {boolean} debug debug mode toggle
      */
-    constructor(type, debug = false) {
+    constructor(type, checkers = [], debug = false) {
         typeof(type) === "string" || (function() { throw "type should be a string" }());
 
         this.parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
@@ -31,7 +30,7 @@ class Type {
     }
 
     /**
-     * Checkers whether a value belongs
+     * Checks whether a value belongs
      * to this instance's type
      * @param {*} value any value
      */
@@ -39,7 +38,24 @@ class Type {
         return this.checker(value);
     }
 
+    /**
+     * Checks whether a value belongs
+     * to this instance's type
+     * @param {*} value any value
+     */
+    demand(value) {
+        if (this.checks(value)) {
+            return value;
+        } else {
+            throw new TypeError(`Value "${value}" doesn't match type "${this.type}"`);
+        }
+    }
+
 }
+
+let instance = new Type("boolean");
+console.log(instance.demand(true));
+// console.log(instance.demand("string"));
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = Type;
