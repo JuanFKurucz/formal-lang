@@ -1,10 +1,10 @@
 const moo = require("moo");
 
 const lexer = moo.compile({
-    number: ["number"],
+    xnumber: ["number"],
     xundefined: ["undefined"],
     boolean: ["boolean"],
-    string: ["string"],
+    xstring: ["string"],
     xfunction: ["function"],
     object: ["object"],
     symbol: ["symbol"],
@@ -38,9 +38,16 @@ const lexer = moo.compile({
     lsb: /\[/,
     rsb: /\]/,
 
+    lb: /{/,
+    rb: /}/,
+
+    colon: /:/,
+
+    string: /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/,
+    property: /[a-zA-Z_\$][\w$]*/, // TODO: mejorar esto o está bien?
     integer: /[0-9]+/,
 
-    objectConstructor: /[A-Z]+/,
+    upperCaseChar: /[A-Z]+/,
 
     ws: { match: /\s+/, lineBreaks: true },
 });

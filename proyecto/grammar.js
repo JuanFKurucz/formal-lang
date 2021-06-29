@@ -5,6 +5,7 @@ function id(x) { return x[0]; }
 
 
 // TODO: Comentar todos los console logs!!!
+// TODO: ver todos los TODOs que hayan por ahí
 
 const lexer = require("./lexer.js");
 
@@ -61,11 +62,99 @@ const iterationChecker = typeCheckers => {
         return values.length == 0 ? true : (v == values.length);
     })
 }
+
+const objectPropChecker = (name, typeChecker, parseKey) => {
+    const propChecker = keyName => {
+        return keyName == (parseKey ? JSON.parse(name) : name);
+    };
+    return [{
+        checkerPair: [
+            propChecker,
+            typeChecker
+        ],
+        type: "one"
+    }];
+};
+
+// Matches a checker function pair with an object's key/value
+// It removes the key for each match and also returns the count
+// of removed keys, which is useful to compare on each type.
+// E.g. for checker types:
+// - "one" should and will count 1 (because objects won't allow duplicates)
+// - "oneRegex" should count 1, but it might remove more than one key
+// - "zeroPlusRegex" would accept any count, might remove zero or more
+const matchKeysWithCheckers = (object, typeCheckerPair) => {
+    let count = 0;
+    const checkers = typeCheckerPair.checkerPair;
+    let keysToRemove = [];
+
+    // Check for key/value
+    for (const [key, value] of Object.entries(object)) {
+        if (checkers[0](key) && checkers[1](value)) {
+            count++;
+            keysToRemove.push(key);
+        }
+    }
+    
+    // Remove keys
+    for (const key of keysToRemove) delete object[key];
+
+    return count;
+};
+
+const objectChecker = typeCheckerPairs => {
+    return (checkObject => {
+        if (typeof checkObject != "object") return false;
+
+        // Copy of original object. because we
+        // might remove some keys
+        let object = {...checkObject};
+
+        // If we have a spread in our checkers,
+        // an object is valid even if it has
+        // some keys left to check, otherwise
+        // all keys must be checked and removed
+        let spreadFound = false;
+
+        for (let c = 0; c < typeCheckerPairs.length; c++) {
+            const currentCheckerPair = typeCheckerPairs[c]; // current checker pair functions
+            let matchCount = 0;
+
+            switch (typeCheckerPairs[c].type) {
+                case "oneRegex":
+                case "one":
+                    matchCount = matchKeysWithCheckers(object, currentCheckerPair);
+
+                    // For those types we should always match
+                    // exactly one key
+                    if (matchCount != 1) return false;
+                    break;
+
+                case "nRegex":
+                    matchCount = matchKeysWithCheckers(object, currentCheckerPair);
+
+                    // For this type we should always match
+                    // exactly "n" (from ...n * /re/)
+                    if (matchCount != currentCheckerPair.count) return false;
+                    break;
+
+                case "zeroPlusRegex":
+                    // For this type we just remove everything we
+                    // can and we don't care about its count
+                    matchKeysWithCheckers(object, currentCheckerPair);
+                    break;
+
+                case "spread":
+                    spreadFound = true;
+            }
+        }
+        return spreadFound ? true : Object.keys(object).length == 0;
+    })
+}
 var grammar = {
     Lexer: lexer,
     ParserRules: [
     {"name": "E", "symbols": ["T"], "postprocess": ([expr]) => expr},
-    {"name": "E", "symbols": ["O"], "postprocess": ([expr]) => expr},
     {"name": "T", "symbols": ["atom"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["regularExpr"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["group"], "postprocess": ([x]) => x},
@@ -76,13 +165,11 @@ var grammar = {
     {"name": "T", "symbols": ["inclusion"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["valueCheck"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["list"], "postprocess": ([x]) => x},
-    {"name": "T", "symbols": ["objectConstruct"], "postprocess": ([x]) => x},
-    {"name": "O", "symbols": ["object"], "postprocess": ([expr]) => expr},
-    {"name": "objectConstruct", "symbols": [(lexer.has("upperCaseChar") ? {type: "upperCaseChar"} : upperCaseChar)], "postprocess": ([type]) => atomChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "T", "symbols": ["object"], "postprocess": ([x]) => x},
+    {"name": "atom", "symbols": [(lexer.has("xnumber") ? {type: "xnumber"} : xnumber)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xundefined") ? {type: "xundefined"} : xundefined)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([type]) => atomChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("string") ? {type: "string"} : string)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("xstring") ? {type: "xstring"} : xstring)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xfunction") ? {type: "xfunction"} : xfunction)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("object") ? {type: "object"} : object)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("symbol") ? {type: "symbol"} : symbol)], "postprocess": ([type]) => atomChecker(type.value)},
@@ -135,6 +222,47 @@ var grammar = {
             return [{
                 checker: typeChecker,
                 type: "one"
+            }];
+        } },
+    {"name": "object", "symbols": [(lexer.has("lb") ? {type: "lb"} : lb), "objectProps", (lexer.has("rb") ? {type: "rb"} : rb)], "postprocess": ([, typeCheckerPairs, ]) => objectChecker(typeCheckerPairs)},
+    {"name": "objectProps", "symbols": ["objectProps", (lexer.has("separator") ? {type: "separator"} : separator), "objectProp"], "postprocess":  ([typeCheckerPairs, , typeCheckerPair]) => {
+            return [...typeCheckerPairs, ...typeCheckerPair];
+        } },
+    {"name": "objectProps", "symbols": ["objectProp"], "postprocess": ([prop]) => prop},
+    {"name": "objectProp", "symbols": [(lexer.has("spread") ? {type: "spread"} : spread)], "postprocess":  ([]) => {
+            return [{
+                checkerPair: [],
+                type: "spread"
+            }];
+        } },
+    {"name": "objectProp", "symbols": [(lexer.has("property") ? {type: "property"} : property), (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess": ([name, , typeChecker]) => objectPropChecker(name, typeChecker, false)},
+    {"name": "objectProp", "symbols": [(lexer.has("string") ? {type: "string"} : string), (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess": ([name, , typeChecker]) => objectPropChecker(name, typeChecker, true)},
+    {"name": "objectProp", "symbols": ["regularExpr", (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess":  ([typeChecker1, , typeChecker2]) => {
+            return [{
+                checkerPair: [
+                    typeChecker1,
+                    typeChecker2
+                ],
+                type: "oneRegex"
+            }];
+        } },
+    {"name": "objectProp", "symbols": [(lexer.has("spread") ? {type: "spread"} : spread), "regularExpr", (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess":  ([, typeChecker1, , typeChecker2]) => {
+            return [{
+                checkerPair: [
+                    typeChecker1,
+                    typeChecker2
+                ],
+                type: "zeroPlusRegex"
+            }];
+        } },
+    {"name": "objectProp", "symbols": [(lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("integer") ? {type: "integer"} : integer), (lexer.has("mult") ? {type: "mult"} : mult), "regularExpr", (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess":  ([, n, , typeChecker1, , typeChecker2]) => {
+            return [{
+                checkerPair: [
+                    typeChecker1,
+                    typeChecker2
+                ],
+                type: "nRegex",
+                count: n
             }];
         } }
 ]

@@ -47,11 +47,20 @@ let instance = new Type("[string, ...boolean, string]");
 // instance = new Type("[string, boolean, string]");
 // console.log(instance.checks(["abc", true, "abc"]));
 
-instance = new Type("[...2*[boolean, string]]", true);
-console.log(instance.checks([
-    [true, "abc"],
-    [true, "abc"],
-]));
+// instance = new Type("[...2*[boolean, string], string]", true);
+// console.log(instance.checks([
+//     [true, "abc"],
+//     [true, "abc"], "abc",
+// ]));
+
+instance = new Type("{.../a+/: boolean, /b+/: string}", true);
+console.log(instance.checks({
+    "aaa": true,
+    "aaaa": true,
+    "aaaaaaa": true,
+    "aaaaaaaaaa": true,
+    bbbb: "gfgfg",
+}));
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = Type;

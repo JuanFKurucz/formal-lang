@@ -1,6 +1,7 @@
 @{%
 
 // TODO: Comentar todos los console logs!!!
+// TODO: ver todos los TODOs que hayan por ahí
 
 const lexer = require("./lexer.js");
 
@@ -57,6 +58,95 @@ const iterationChecker = typeCheckers => {
         return values.length == 0 ? true : (v == values.length);
     })
 }
+
+const objectPropChecker = (name, typeChecker, parseKey) => {
+    const propChecker = keyName => {
+        return keyName == (parseKey ? JSON.parse(name) : name);
+    };
+    return [{
+        checkerPair: [
+            propChecker,
+            typeChecker
+        ],
+        type: "one"
+    }];
+};
+
+// Matches a checker function pair with an object's key/value
+// It removes the key for each match and also returns the count
+// of removed keys, which is useful to compare on each type.
+// E.g. for checker types:
+// - "one" should and will count 1 (because objects won't allow duplicates)
+// - "oneRegex" should count 1, but it might remove more than one key
+// - "zeroPlusRegex" would accept any count, might remove zero or more
+const matchKeysWithCheckers = (object, typeCheckerPair) => {
+    let count = 0;
+    const checkers = typeCheckerPair.checkerPair;
+    let keysToRemove = [];
+
+    // Check for key/value
+    for (const [key, value] of Object.entries(object)) {
+        if (checkers[0](key) && checkers[1](value)) {
+            count++;
+            keysToRemove.push(key);
+        }
+    }
+    
+    // Remove keys
+    for (const key of keysToRemove) delete object[key];
+
+    return count;
+};
+
+const objectChecker = typeCheckerPairs => {
+    return (checkObject => {
+        if (typeof checkObject != "object") return false;
+
+        // Copy of original object. because we
+        // might remove some keys
+        let object = {...checkObject};
+
+        // If we have a spread in our checkers,
+        // an object is valid even if it has
+        // some keys left to check, otherwise
+        // all keys must be checked and removed
+        let spreadFound = false;
+
+        for (let c = 0; c < typeCheckerPairs.length; c++) {
+            const currentCheckerPair = typeCheckerPairs[c]; // current checker pair functions
+            let matchCount = 0;
+
+            switch (typeCheckerPairs[c].type) {
+                case "oneRegex":
+                case "one":
+                    matchCount = matchKeysWithCheckers(object, currentCheckerPair);
+
+                    // For those types we should always match
+                    // exactly one key
+                    if (matchCount != 1) return false;
+                    break;
+
+                case "nRegex":
+                    matchCount = matchKeysWithCheckers(object, currentCheckerPair);
+
+                    // For this type we should always match
+                    // exactly "n" (from ...n * /re/)
+                    if (matchCount != currentCheckerPair.count) return false;
+                    break;
+
+                case "zeroPlusRegex":
+                    // For this type we just remove everything we
+                    // can and we don't care about its count
+                    matchKeysWithCheckers(object, currentCheckerPair);
+                    break;
+
+                case "spread":
+                    spreadFound = true;
+            }
+        }
+        return spreadFound ? true : Object.keys(object).length == 0;
+    })
+}
 %}
 
 @lexer lexer
@@ -64,7 +154,7 @@ const iterationChecker = typeCheckers => {
 # Main
 E -> T {% ([expr]) => expr %}
 # E -> I {% ([expr]) => expr %}
-E -> O {% ([expr]) => expr %}
+# E -> O {% ([expr]) => expr %}
 
 # Types and their combinations
 T -> atom {% ([x]) => x %}
@@ -77,22 +167,15 @@ T -> minus {% ([x]) => x %}
 T -> inclusion {% ([x]) => x %}
 T -> valueCheck {% ([x]) => x %}
 T -> list {% ([x]) => x %}
-T -> objectConstruct {% ([x]) => x %}
+T -> object {% ([x]) => x %}
 
-# Iterables
-# I -> list {% ([expr]) => expr %}
-
-# Objects
-O -> object {% ([expr]) => expr %}
-
-# TODO: mover
-objectConstruct -> %upperCaseChar {% ([type]) => atomChecker(type.value) %}
+# %upperCaseChar
 
 # Atoms
-atom -> %number {% ([type]) => atomChecker(type.value) %}
+atom -> %xnumber {% ([type]) => atomChecker(type.value) %}
 atom -> %xundefined {% ([type]) => atomChecker(type.value) %}
 atom -> %boolean {% ([type]) => atomChecker(type.value) %}
-atom -> %string {% ([type]) => atomChecker(type.value) %}
+atom -> %xstring {% ([type]) => atomChecker(type.value) %}
 atom -> %xfunction {% ([type]) => atomChecker(type.value) %}
 atom -> %object {% ([type]) => atomChecker(type.value) %}
 atom -> %symbol {% ([type]) => atomChecker(type.value) %}
@@ -111,7 +194,7 @@ inclusion -> %xin %lsb values %rsb {% ([ , , values, ]) => {
 
 values -> values %separator value {% ([values, , value]) => { return [...values, ...value]; } %}
 values -> value {% ([value]) => { return value; } %}
-# TODO: agregar %strings y %numbers
+# TODO: agregar %string y %number
 value -> %booleans {% ([token]) => {
     // Note: we're deserializing here on purpose
     // in order to throw an error while parsing
@@ -119,7 +202,7 @@ value -> %booleans {% ([token]) => {
 } %}
 
 # javascript values (string, boolean or number)
-# TODO: agregar %strings y %numbers
+# TODO: agregar %string y %number
 valueCheck -> %booleans {% ([token]) => ((value) => (value === JSON.parse(token.value))) %}
 
 # /{regexp}/
@@ -145,16 +228,13 @@ minus -> T %sub T {% ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChe
 # [...]
 list -> %lsb %spread %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
 
-# TODO: preguntar si tenemos que revisar que no se repitan o simplemente dejar que retorne false
-# los tipos. Por ej. (...type1, type1, type2), acá type1 es ambiguo
-# non-any list
-# e.g.: [boolean, ...string, boolean]
+# [type1, type2, type3]
 list -> %lsb listValues %rsb {% ([, typeCheckers, ]) => iterationChecker(typeCheckers) %}
 listValues -> listValues %separator listValue {% ([typeCheckers, , typeChecker]) => {
     return [...typeCheckers, ...typeChecker];
 } %}
 listValues -> listValue {% ([type]) => type %}
-# ...n * type
+# [...n * type]
 listValue -> %spread %integer %mult T {% ([ , n, , typeChecker]) => {
     // Just append it n times
     return Array(parseInt(n)).fill({
@@ -162,17 +242,67 @@ listValue -> %spread %integer %mult T {% ([ , n, , typeChecker]) => {
         type: "one"
     });
 } %}
-# ...type
+# [...type]
 listValue -> %spread T {% ([ , typeChecker]) => {
     return [{
         checker: typeChecker,
         type: "zeroPlus"
     }];
 } %}
-# any type, values or their combinations (any "T")
+# [type]
 listValue -> T {% ([typeChecker]) => {
     return [{
         checker: typeChecker,
         type: "one"
+    }];
+} %}
+
+# { prop1: type1, prop2: type2 }
+object -> %lb objectProps %rb {% ([, typeCheckerPairs, ]) => objectChecker(typeCheckerPairs) %}
+objectProps -> objectProps %separator objectProp {% ([typeCheckerPairs, , typeCheckerPair]) => {
+    return [...typeCheckerPairs, ...typeCheckerPair];
+} %}
+objectProps -> objectProp {% ([prop]) => prop %}
+
+# {...}
+objectProp -> %spread {% ([]) => {
+    return [{
+        checkerPair: [],
+        type: "spread"
+    }];
+} %}
+# {prop: type}
+objectProp -> %property %colon T {% ([name, , typeChecker]) => objectPropChecker(name, typeChecker, false) %}
+# {"prop": type}
+objectProp -> %string %colon T {% ([name, , typeChecker]) => objectPropChecker(name, typeChecker, true) %}
+# {/re/: type}
+objectProp -> regularExpr %colon T {% ([typeChecker1, , typeChecker2]) => {
+    return [{
+        checkerPair: [
+            typeChecker1,
+            typeChecker2
+        ],
+        type: "oneRegex"
+    }];
+} %}
+# {.../re/: type}
+objectProp -> %spread regularExpr %colon T {% ([, typeChecker1, , typeChecker2]) => {
+    return [{
+        checkerPair: [
+            typeChecker1,
+            typeChecker2
+        ],
+        type: "zeroPlusRegex"
+    }];
+} %}
+# {...n * /re/: type}
+objectProp -> %spread %integer %mult regularExpr %colon T {% ([, n, , typeChecker1, , typeChecker2]) => {
+    return [{
+        checkerPair: [
+            typeChecker1,
+            typeChecker2
+        ],
+        type: "nRegex",
+        count: n
     }];
 } %}

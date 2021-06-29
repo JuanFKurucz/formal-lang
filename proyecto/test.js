@@ -301,11 +301,13 @@ describe('iterables', function() {
             ],
         ]
     );
+    // TODO: revisar: [string, ...[boolean, string]]
+    // Parece que falla sólo en el test, en tyjs.js no
     evaluate(
         new Type("[...[boolean, string]]"), [
             [
                 [
-                    [true, "abc"]
+                    [true, "abc"],
                 ], true
             ],
             [
@@ -321,6 +323,36 @@ describe('iterables', function() {
                     ["abc", true]
                 ], false
             ],
+        ]
+    );
+});
+
+describe('objects', function() {
+    evaluate(
+        new Type("{.../a+/: boolean, /b+/: string}"), [
+            [{ aaa: true, aaaaa: false, bbb: "abc" }, true],
+            [{ bbb: "abc" }, true],
+            [{ aaa: true, aaaaa: false, bbb: "abc", c: "abc" }, false],
+        ]
+    );
+    evaluate(
+        new Type("{abc: boolean, \"def\": string}"), [
+            [{ abc: true, def: "abc" }, true],
+            [{ abc: true, "def": "abc" }, true],
+            [{ "abc": true, def: "abc" }, true],
+            [{ "abc": true, abc: "abc" }, false],
+            [{ "abc": true, def: "abc", "xyz": "abc" }, false],
+        ]
+    );
+    evaluate(
+        new Type("{abc: boolean, \"def\": string, ...}"), [
+            [{ "abc": true, def: "abc", "xyz": "abc" }, true],
+        ]
+    );
+    evaluate(
+        new Type("{...2*/a+/: boolean, \"def\": string, ...}"), [
+            [{ "aaa": true, "aaaa": true, def: "abc", "xyz": "abc" }, true],
+            [{ "aaa": true, "aaaa": true, "aaaaa": true, def: "abc", "xyz": "abc" }, false],
         ]
     );
 });
