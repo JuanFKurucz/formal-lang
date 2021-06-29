@@ -41,13 +41,14 @@ const lexer = moo.compile({
     lb: /{/,
     rb: /}/,
 
+    lt: /</,
+    gt: />/,
+
     colon: /:/,
 
     string: /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/,
-    property: /[a-zA-Z_\$][\w$]*/, // TODO: mejorar esto o está bien?
+    identifier: /[a-zA-Z_\$][\w$]*/, // TODO: mejorar esto o está bien?
     integer: /[0-9]+/,
-
-    upperCaseChar: /[A-Z]+/,
 
     ws: { match: /\s+/, lineBreaks: true },
 });

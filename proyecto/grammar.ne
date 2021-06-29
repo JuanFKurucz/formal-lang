@@ -6,12 +6,16 @@
 const lexer = require("./lexer.js");
 
 const atomCheckers = new Map([
-    ["number", value => typeof(value) === "number"],
-    ["undefined", value => typeof(value) === "undefined"],
+    ["number", value => {
+        return (typeof(value) === "number");
+    }],
     ["boolean", value => {
         return (typeof(value) === "boolean");
     }],
-    ["string", value => typeof(value) === "string"],
+    ["string", value => {
+        return (typeof(value) === "string");
+    }],
+    ["undefined", value => typeof(value) === "undefined"],
     ["function", value => typeof(value) === "function"],
     ["object", value => typeof(value) === "object"],
     ["symbol", value => typeof(value) === "symbol"],
@@ -28,11 +32,15 @@ const atomCheckers = new Map([
 const atomChecker = type => (atomCheckers.get(type));
 
 const iterationChecker = typeCheckers => {
-    return (values => {
-
-        // TODO: casos particulares:
-        // - si es Map, lo transformamos en lista de listas
-        // - si es set, transformamos en lista
+    return (checkValues => {
+        // Copies values and also converts Map,
+        // and Set to a regular Array
+        // Note: this is needed because we are
+        // re-using this function check for Maps
+        // and Sets, not just Arrays
+        let values = checkValues instanceof Map
+                    ? Array.from(checkValues.entries())
+                    : Array.from(checkValues);
 
         let v = 0; // index of current value
         for (let c = 0; c < typeCheckers.length; c++) {
@@ -153,8 +161,6 @@ const objectChecker = typeCheckerPairs => {
 
 # Main
 E -> T {% ([expr]) => expr %}
-# E -> I {% ([expr]) => expr %}
-# E -> O {% ([expr]) => expr %}
 
 # Types and their combinations
 T -> atom {% ([x]) => x %}
@@ -168,8 +174,7 @@ T -> inclusion {% ([x]) => x %}
 T -> valueCheck {% ([x]) => x %}
 T -> list {% ([x]) => x %}
 T -> object {% ([x]) => x %}
-
-# %upperCaseChar
+T -> classConstructor {% ([x]) => x %}
 
 # Atoms
 atom -> %xnumber {% ([type]) => atomChecker(type.value) %}
@@ -272,7 +277,7 @@ objectProp -> %spread {% ([]) => {
     }];
 } %}
 # {prop: type}
-objectProp -> %property %colon T {% ([name, , typeChecker]) => objectPropChecker(name, typeChecker, false) %}
+objectProp -> %identifier %colon T {% ([name, , typeChecker]) => objectPropChecker(name, typeChecker, false) %}
 # {"prop": type}
 objectProp -> %string %colon T {% ([name, , typeChecker]) => objectPropChecker(name, typeChecker, true) %}
 # {/re/: type}
@@ -303,6 +308,42 @@ objectProp -> %spread %integer %mult regularExpr %colon T {% ([, n, , typeChecke
             typeChecker2
         ],
         type: "nRegex",
-        count: n
+        count: parseInt(n)
     }];
+} %}
+
+# Class
+classConstructor -> dynamicName {% ([typeChecker]) => typeChecker %}
+# Class<type>
+classConstructor -> dynamicName %lt T %gt {% ([typeChecker1, , typeChecker2, ]) => {
+    // Iteration checker for a [...type]
+    let iterableChecker = iterationChecker([{
+        checker: typeChecker2,
+        type: "zeroPlus"
+    }]);
+    return ((values) => typeChecker1(values) && iterableChecker(values));
+} %}
+# Class<type1, type2>
+classConstructor -> dynamicName %lt T %separator T %gt {% ([typeChecker1, , typeChecker2, , typeChecker3, ]) => {
+    // Iteration checker for a [...[type1, type2]]
+    let iterableChecker = iterationChecker([{
+        checker: (values => {
+            return typeChecker2(values[0]) && typeChecker3(values[1]);
+        }),
+        type: "zeroPlus"
+    }]);
+    return ((values) => typeChecker1(values) && iterableChecker(values));
+} %}
+# TODO: ver qué tan rancio es esto
+dynamicName -> %identifier {% ([name]) => {
+    let className = name.value;
+
+    if (className.charAt(0) !== className.charAt(0).toUpperCase()) {
+        throw new SyntaxError(`Invalid type "${className}"`);
+    }
+
+    // Hack-ish way to check if a class actually exists
+    eval(`${className}.name`);
+
+    return ((value) => eval(`value instanceof ${className}`));
 } %}

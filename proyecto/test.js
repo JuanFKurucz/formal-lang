@@ -356,3 +356,72 @@ describe('objects', function() {
         ]
     );
 });
+
+describe('constructs', function() {
+    evaluate(
+        new Type("Set<boolean>"), [
+            [new Set([true, false]), true],
+            [new Set([true, "abc"]), false],
+            [
+                [true, false], false
+            ],
+            [new Set(), true],
+        ]
+    );
+    evaluate(
+        new Type("Set & [...boolean]"), [
+            [new Set([true, false]), true],
+            [new Set([true, "abc"]), false],
+            [
+                [true, false], false
+            ],
+            [new Set(), true],
+        ]
+    );
+    evaluate(
+        new Type("Array<boolean>"), [
+            [new Array(true, false), true],
+            [new Array(true, "abc"), false],
+            [
+                [true, false], true
+            ],
+            [new Array(), true],
+        ]
+    );
+    evaluate(
+        new Type("Array & [...boolean]"), [
+            [new Array(true, false), true],
+            [new Array(true, "abc"), false],
+            [
+                [true, false], true
+            ],
+            [new Array(), true],
+        ]
+    );
+    evaluate(
+        new Type("Map<string, boolean>"), [
+            [new Map([
+                ["abc", true],
+                ["def", false]
+            ]), true],
+            [new Map([
+                ["abc", 1],
+                ["def", false]
+            ]), false],
+            [new Map([]), true],
+        ]
+    );
+    evaluate(
+        new Type("Map & [...[string, boolean]]"), [
+            [new Map([
+                ["abc", true],
+                ["def", false]
+            ]), true],
+            [new Map([
+                ["abc", 1],
+                ["def", false]
+            ]), false],
+            [new Map([]), true],
+        ]
+    );
+});

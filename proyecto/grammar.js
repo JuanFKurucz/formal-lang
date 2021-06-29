@@ -10,12 +10,16 @@ function id(x) { return x[0]; }
 const lexer = require("./lexer.js");
 
 const atomCheckers = new Map([
-    ["number", value => typeof(value) === "number"],
-    ["undefined", value => typeof(value) === "undefined"],
+    ["number", value => {
+        return (typeof(value) === "number");
+    }],
     ["boolean", value => {
         return (typeof(value) === "boolean");
     }],
-    ["string", value => typeof(value) === "string"],
+    ["string", value => {
+        return (typeof(value) === "string");
+    }],
+    ["undefined", value => typeof(value) === "undefined"],
     ["function", value => typeof(value) === "function"],
     ["object", value => typeof(value) === "object"],
     ["symbol", value => typeof(value) === "symbol"],
@@ -32,11 +36,15 @@ const atomCheckers = new Map([
 const atomChecker = type => (atomCheckers.get(type));
 
 const iterationChecker = typeCheckers => {
-    return (values => {
-
-        // TODO: casos particulares:
-        // - si es Map, lo transformamos en lista de listas
-        // - si es set, transformamos en lista
+    return (checkValues => {
+        // Copies values and also converts Map,
+        // and Set to a regular Array
+        // Note: this is needed because we are
+        // re-using this function check for Maps
+        // and Sets, not just Arrays
+        let values = checkValues instanceof Map
+                    ? Array.from(checkValues.entries())
+                    : Array.from(checkValues);
 
         let v = 0; // index of current value
         for (let c = 0; c < typeCheckers.length; c++) {
@@ -166,6 +174,7 @@ var grammar = {
     {"name": "T", "symbols": ["valueCheck"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["list"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["object"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["classConstructor"], "postprocess": ([x]) => x},
     {"name": "atom", "symbols": [(lexer.has("xnumber") ? {type: "xnumber"} : xnumber)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xundefined") ? {type: "xundefined"} : xundefined)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([type]) => atomChecker(type.value)},
@@ -235,7 +244,7 @@ var grammar = {
                 type: "spread"
             }];
         } },
-    {"name": "objectProp", "symbols": [(lexer.has("property") ? {type: "property"} : property), (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess": ([name, , typeChecker]) => objectPropChecker(name, typeChecker, false)},
+    {"name": "objectProp", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess": ([name, , typeChecker]) => objectPropChecker(name, typeChecker, false)},
     {"name": "objectProp", "symbols": [(lexer.has("string") ? {type: "string"} : string), (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess": ([name, , typeChecker]) => objectPropChecker(name, typeChecker, true)},
     {"name": "objectProp", "symbols": ["regularExpr", (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess":  ([typeChecker1, , typeChecker2]) => {
             return [{
@@ -262,8 +271,39 @@ var grammar = {
                     typeChecker2
                 ],
                 type: "nRegex",
-                count: n
+                count: parseInt(n)
             }];
+        } },
+    {"name": "classConstructor", "symbols": ["dynamicName"], "postprocess": ([typeChecker]) => typeChecker},
+    {"name": "classConstructor", "symbols": ["dynamicName", (lexer.has("lt") ? {type: "lt"} : lt), "T", (lexer.has("gt") ? {type: "gt"} : gt)], "postprocess":  ([typeChecker1, , typeChecker2, ]) => {
+            // Iteration checker for a [...type]
+            let iterableChecker = iterationChecker([{
+                checker: typeChecker2,
+                type: "zeroPlus"
+            }]);
+            return ((values) => typeChecker1(values) && iterableChecker(values));
+        } },
+    {"name": "classConstructor", "symbols": ["dynamicName", (lexer.has("lt") ? {type: "lt"} : lt), "T", (lexer.has("separator") ? {type: "separator"} : separator), "T", (lexer.has("gt") ? {type: "gt"} : gt)], "postprocess":  ([typeChecker1, , typeChecker2, , typeChecker3, ]) => {
+            // Iteration checker for a [...[type1, type2]]
+            let iterableChecker = iterationChecker([{
+                checker: (values => {
+                    return typeChecker2(values[0]) && typeChecker3(values[1]);
+                }),
+                type: "zeroPlus"
+            }]);
+            return ((values) => typeChecker1(values) && iterableChecker(values));
+        } },
+    {"name": "dynamicName", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess":  ([name]) => {
+            let className = name.value;
+        
+            if (className.charAt(0) !== className.charAt(0).toUpperCase()) {
+                throw new SyntaxError(`Invalid type "${className}"`);
+            }
+        
+            // Hack-ish way to check if a class actually exists
+            eval(`${className}.name`);
+        
+            return ((value) => eval(`value instanceof ${className}`));
         } }
 ]
   , ParserStart: "E"
