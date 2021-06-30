@@ -170,6 +170,7 @@ var grammar = {
     {"name": "T", "symbols": ["list"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["object"], "postprocess": ([x]) => x},
     {"name": "T", "symbols": ["classConstructor"], "postprocess": ([x]) => x},
+    {"name": "T", "symbols": ["customChecker"], "postprocess": ([x]) => x},
     {"name": "atom", "symbols": [(lexer.has("xnumber") ? {type: "xnumber"} : xnumber)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xundefined") ? {type: "xundefined"} : xundefined)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([type]) => atomChecker(type.value)},
@@ -268,6 +269,13 @@ var grammar = {
                 type: "nRegex",
                 count: parseInt(n)
             }];
+        } },
+    {"name": "customChecker", "symbols": [(lexer.has("pe") ? {type: "pe"} : pe), (lexer.has("integer") ? {type: "integer"} : integer)], "postprocess":  ([ , index]) => {
+            return ((values, instance) => {
+                const customTypeChecker = instance.checkers[parseInt(index)];
+                customTypeChecker || (function() { throw `Invalid custom checker index ${index}` }());
+                return customTypeChecker(values);
+            });
         } },
     {"name": "classConstructor", "symbols": ["dynamicName"], "postprocess": ([typeChecker]) => typeChecker},
     {"name": "classConstructor", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lt") ? {type: "lt"} : lt), "classCheckers", (lexer.has("gt") ? {type: "gt"} : gt)], "postprocess":  ([name, , typeCheckers, ]) => {

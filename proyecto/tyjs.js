@@ -13,11 +13,6 @@ class Type {
         this.checkers = checkers;
         this.classCheckers = {};
 
-        // // TODO: borrar
-        // this.checkers.push([
-        //     [((x, instance) => true)],
-        // ]);
-
         typeof(type) === "string" || (function() { throw "type should be a string" }());
 
         this.parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
@@ -72,24 +67,31 @@ class Type {
 
 }
 
-let instance = new Type("Map<number, boolean>", [], true);
+// let instance = new Type("Map<number, boolean>", [], true);
 
-instance.classChecker(Array, (values, typeCheckers) => {
-    const [typeChecker] = typeCheckers;
-    return typeCheckers.length == 1 && values.every((value) => typeChecker(value));
-});
+// instance.classChecker(Array, (values, typeCheckers) => {
+//     const [typeChecker] = typeCheckers;
+//     return typeCheckers.length == 1 && values.every((value) => typeChecker(value));
+// });
 
-instance.classChecker(Set, (values, typeCheckers) => {
-    const [typeChecker] = typeCheckers;
-    return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
-});
+// instance.classChecker(Set, (values, typeCheckers) => {
+//     const [typeChecker] = typeCheckers;
+//     return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
+// });
 
-instance.classChecker(Map, (values, typeCheckers) => {
-    if (typeCheckers.length != 2) return false;
-    for (const [key, value] of Array.from(values.entries()))
-        if (!(typeCheckers[0](key) && typeCheckers[1](value))) return false;
-    return true;
-});
+// instance.classChecker(Map, (values, typeCheckers) => {
+//     if (typeCheckers.length != 2) return false;
+//     for (const [key, value] of Array.from(values.entries()))
+//         if (!(typeCheckers[0](key) && typeCheckers[1](value))) return false;
+//     return true;
+// });
+
+let instance = new Type("[$0, $1]", [
+    ((value) => value === 5),
+    ((value) => value === 10)
+]);
+
+console.log(instance.checks([5, 10]))
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = Type;

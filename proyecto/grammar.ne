@@ -170,6 +170,7 @@ T -> valueCheck {% ([x]) => x %}
 T -> list {% ([x]) => x %}
 T -> object {% ([x]) => x %}
 T -> classConstructor {% ([x]) => x %}
+T -> customChecker {% ([x]) => x %}
 
 # Atoms
 atom -> %xnumber {% ([type]) => atomChecker(type.value) %}
@@ -305,6 +306,15 @@ objectProp -> %spread %integer %mult regularExpr %colon T {% ([, n, , typeChecke
         type: "nRegex",
         count: parseInt(n)
     }];
+} %}
+
+# $n
+customChecker -> %pe %integer {% ([ , index]) => {
+    return ((values, instance) => {
+        const customTypeChecker = instance.checkers[parseInt(index)];
+        customTypeChecker || (function() { throw `Invalid custom checker index ${index}` }());
+        return customTypeChecker(values);
+    });
 } %}
 
 # Class

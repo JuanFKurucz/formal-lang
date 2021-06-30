@@ -18,7 +18,7 @@ const lexer = moo.compile({
 
     spread: ["..."],
 
-    regexp: /\/(?:[^\n\\\/]|\\[^\n])+\//, // TODO: \r o no?
+    regexp: /\/(?:[^\n\\\/]|\\[^\n])+\//,
 
     xin: ["in"],
     booleans: ["true", "false"],
@@ -45,6 +45,8 @@ const lexer = moo.compile({
     gt: />/,
 
     colon: /:/,
+
+    pe: /\$/,
 
     string: /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/,
     identifier: /[a-zA-Z_\$][\w$]*/, // TODO: mejorar esto o está bien?
