@@ -1,9 +1,30 @@
-const nearley = require("nearley");
-const grammar = require("./grammar.js");
 const assert = require('assert');
 const Type = require("./tyjs.js");
 
-let parser, expr;
+const predefinedClassCheckers = [
+    [Array, (values, typeCheckers) => {
+        const [typeChecker] = typeCheckers;
+        return typeCheckers.length == 1 && values.every((value) => typeChecker(value));
+    }],
+    [Set, (values, typeCheckers) => {
+        const [typeChecker] = typeCheckers;
+        return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
+    }]
+]
+
+const createInstanceType = (type,overridePredifined=[]) => {
+    const instance = new Type(type);
+    if(overridePredifined.length){
+        overridePredifined.forEach(x=>{
+            instance.classChecker(x[0],x[1]);
+        });
+    } else {
+        predefinedClassCheckers.forEach(x=>{
+            instance.classChecker(x[0],x[1]);
+        });
+    }
+    return instance;
+}
 
 const evaluate = (instance, cases) => {
     cases.forEach(e => {
@@ -102,7 +123,7 @@ for (let key in values) {
 describe('atoms', function() {
     for (let type in values) {
         describe(type, function() {
-            evaluate(new Type(this.title), values[this.title]);
+            evaluate(createInstanceType(this.title), values[this.title]);
         });
     }
 });
@@ -115,7 +136,7 @@ describe('combination', function() {
                 const element = values[type][e];
                 possibleValues.push(Array.isArray(element) ? [element[0], !element[1]] : [element, false])
             }
-            evaluate(new Type(`!${type}`), possibleValues);
+            evaluate(createInstanceType(`!${type}`), possibleValues);
         });
     }
 
@@ -125,7 +146,7 @@ describe('combination', function() {
             const element = values.any[e];
             possibleValues.push([Array.isArray(element) ? element[0] : element, false])
         }
-        evaluate(new Type(this.title), possibleValues);
+        evaluate(createInstanceType(this.title), possibleValues);
     });
     describe('number | string', function() {
         const possibleValues = [];
@@ -144,7 +165,7 @@ describe('combination', function() {
                 }
             }
         }
-        evaluate(new Type(this.title), possibleValues);
+        evaluate(createInstanceType(this.title), possibleValues);
     });
 
     // for (let type1 in values) {
@@ -163,7 +184,7 @@ describe('combination', function() {
     //                     possibleValues.push([Array.isArray(element) ? element[0] : element, true]);
     //                 }
     //             }
-    //             evaluate(new Type(this.title), possibleValues);
+    //             evaluate(createInstanceType(this.title), possibleValues);
     //         });
     //     }
     // }
@@ -173,13 +194,13 @@ describe('combination', function() {
 
 describe('values', function() {
     evaluate(
-        new Type("boolean & true"), [
+        createInstanceType("boolean & true"), [
             [false, false],
             [true, true],
         ]
     );
     evaluate(
-        new Type("true | false"), [
+        createInstanceType("true | false"), [
             [false, true],
             [true, true],
         ]
@@ -189,13 +210,13 @@ describe('values', function() {
 
 describe('inclusions', function() {
     evaluate(
-        new Type("boolean & in [true, true, true]"), [
+        createInstanceType("boolean & in [true, true, true]"), [
             [false, false],
             [true, true],
         ]
     );
     evaluate(
-        new Type("in [false, false, true]"), [
+        createInstanceType("in [false, false, true]"), [
             [false, true],
             [true, true],
         ]
@@ -205,7 +226,7 @@ describe('inclusions', function() {
 
 describe('iterables', function() {
     evaluate(
-        new Type("[...any]"), [
+        createInstanceType("[...any]"), [
             [
                 [false], true
             ],
@@ -218,7 +239,7 @@ describe('iterables', function() {
         ]
     );
     evaluate(
-        new Type("[...]"), [
+        createInstanceType("[...]"), [
             [
                 [false], true
             ],
@@ -231,7 +252,7 @@ describe('iterables', function() {
         ]
     );
     evaluate(
-        new Type("[...boolean]"), [
+        createInstanceType("[...boolean]"), [
             [
                 [false, false, true], true
             ],
@@ -247,7 +268,7 @@ describe('iterables', function() {
         ]
     );
     evaluate(
-        new Type("[string, ...boolean, string]"), [
+        createInstanceType("[string, ...boolean, string]"), [
             [
                 ["abc", false, false, true, "abc"], true
             ],
@@ -266,7 +287,7 @@ describe('iterables', function() {
         ]
     );
     evaluate(
-        new Type("[string, ...2 * boolean, string]"), [
+        createInstanceType("[string, ...2 * boolean, string]"), [
             [
                 ["abc", false, false, "abc"], true
             ],
@@ -276,7 +297,7 @@ describe('iterables', function() {
         ]
     );
     evaluate(
-        new Type("[...3 * boolean]"), [
+        createInstanceType("[...3 * boolean]"), [
             [
                 ["abc", false, false, true], false
             ],
@@ -292,7 +313,7 @@ describe('iterables', function() {
         ]
     );
     evaluate(
-        new Type("[...3 * /[abc]+/]"), [
+        createInstanceType("[...3 * /[abc]+/]"), [
             [
                 ["abc", "abc", "abc"], true
             ],
@@ -304,7 +325,7 @@ describe('iterables', function() {
     // TODO: revisar: [string, ...[boolean, string]]
     // Parece que falla sólo en el test, en tyjs.js no
     evaluate(
-        new Type("[...[boolean, string]]"), [
+        createInstanceType("[...[boolean, string]]"), [
             [
                 [
                     [true, "abc"],
@@ -329,14 +350,14 @@ describe('iterables', function() {
 
 describe('objects', function() {
     evaluate(
-        new Type("{.../a+/: boolean, /b+/: string}"), [
+        createInstanceType("{.../a+/: boolean, /b+/: string}"), [
             [{ aaa: true, aaaaa: false, bbb: "abc" }, true],
             [{ bbb: "abc" }, true],
             [{ aaa: true, aaaaa: false, bbb: "abc", c: "abc" }, false],
         ]
     );
     evaluate(
-        new Type("{abc: boolean, \"def\": string}"), [
+        createInstanceType("{abc: boolean, \"def\": string}"), [
             [{ abc: true, def: "abc" }, true],
             [{ abc: true, "def": "abc" }, true],
             [{ "abc": true, def: "abc" }, true],
@@ -345,12 +366,12 @@ describe('objects', function() {
         ]
     );
     evaluate(
-        new Type("{abc: boolean, \"def\": string, ...}"), [
+        createInstanceType("{abc: boolean, \"def\": string, ...}"), [
             [{ "abc": true, def: "abc", "xyz": "abc" }, true],
         ]
     );
     evaluate(
-        new Type("{...2*/a+/: boolean, \"def\": string, ...}"), [
+        createInstanceType("{...2*/a+/: boolean, \"def\": string, ...}"), [
             [{ "aaa": true, "aaaa": true, def: "abc", "xyz": "abc" }, true],
             [{ "aaa": true, "aaaa": true, "aaaaa": true, def: "abc", "xyz": "abc" }, false],
         ]
@@ -359,7 +380,7 @@ describe('objects', function() {
 
 describe('constructs', function() {
     evaluate(
-        new Type("Set<boolean>"), [
+        createInstanceType("Set<boolean>"), [
             [new Set([true, false]), true],
             [new Set([true, "abc"]), false],
             [
@@ -369,7 +390,7 @@ describe('constructs', function() {
         ]
     );
     evaluate(
-        new Type("Set & [...boolean]"), [
+        createInstanceType("Set & [...boolean]"), [
             [new Set([true, false]), true],
             [new Set([true, "abc"]), false],
             [
@@ -379,7 +400,7 @@ describe('constructs', function() {
         ]
     );
     evaluate(
-        new Type("Array<boolean>"), [
+        createInstanceType("Array<boolean>"), [
             [new Array(true, false), true],
             [new Array(true, "abc"), false],
             [
@@ -389,7 +410,7 @@ describe('constructs', function() {
         ]
     );
     evaluate(
-        new Type("Array & [...boolean]"), [
+        createInstanceType("Array & [...boolean]"), [
             [new Array(true, false), true],
             [new Array(true, "abc"), false],
             [
@@ -399,7 +420,7 @@ describe('constructs', function() {
         ]
     );
     // evaluate(
-    //     new Type("Map<string, boolean>"), [
+    //     createInstanceType("Map<string, boolean>"), [
     //         [new Map([
     //             ["abc", true],
     //             ["def", false]
@@ -412,7 +433,7 @@ describe('constructs', function() {
     //     ]
     // );
     // evaluate(
-    //     new Type("Map & [...[string, boolean]]"), [
+    //     createInstanceType("Map & [...[string, boolean]]"), [
     //         [new Map([
     //             ["abc", true],
     //             ["def", false]
