@@ -313,7 +313,7 @@ classConstructor -> dynamicName {% ([typeChecker]) => typeChecker %}
 classConstructor -> %identifier %lt classCheckers %gt {% ([name, , typeCheckers, ]) => {
     const className = name.value;
     return ((values, instance) => {
-        const clazz = instance.classCheckers[className]; // [Class, Fun]
+        const clazz = instance.getClassChecker()[className]; // [Class, Fun]
         clazz || (function() { throw `Invalid class name "${className}"` }());
         return values instanceof clazz[0] && clazz[1](values, typeCheckers);
     });
@@ -326,7 +326,7 @@ classChecker -> T {% ([typeChecker]) => [typeChecker] %}
 dynamicName -> %identifier {% ([name]) => {
     const className = name.value;
     return ((value, instance) => {
-        const clazz = instance.classCheckers[className]; // [Class, Fun]
+        const clazz = instance.getClassChecker()[className]; // [Class, Fun]
         clazz || (function() { throw `Invalid class name "${className}"` }());
         return value instanceof clazz[0];
     });

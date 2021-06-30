@@ -1,34 +1,11 @@
 const assert = require('assert');
 const Type = require("./tyjs.js");
 
-const predefinedClassCheckers = [
-    [Array, (values, typeCheckers) => {
-        const [typeChecker] = typeCheckers;
-        return typeCheckers.length == 1 && values.every((value) => typeChecker(value));
-    }],
-    [Set, (values, typeCheckers) => {
-        const [typeChecker] = typeCheckers;
-        return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
-    }],
-    [Map, (values, typeCheckers) => {
-        if (typeCheckers.length != 2) return false;
-        for (const [key, value] of Array.from(values.entries()))
-            if (!(typeCheckers[0](key) && typeCheckers[1](value))) return false;
-        return true
-    }]
-]
-
 const createInstanceType = (type, overridePredifined = []) => {
     const instance = new Type(type);
-    if (overridePredifined.length) {
-        overridePredifined.forEach(x => {
-            instance.classChecker(x[0], x[1]);
-        });
-    } else {
-        predefinedClassCheckers.forEach(x => {
-            instance.classChecker(x[0], x[1]);
-        });
-    }
+    overridePredifined.forEach(x => {
+        instance.classChecker(x[0], x[1]);
+    });
     return instance;
 }
 
