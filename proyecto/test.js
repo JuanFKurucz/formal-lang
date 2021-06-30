@@ -398,30 +398,30 @@ describe('constructs', function() {
             [new Array(), true],
         ]
     );
-    evaluate(
-        new Type("Map<string, boolean>"), [
-            [new Map([
-                ["abc", true],
-                ["def", false]
-            ]), true],
-            [new Map([
-                ["abc", 1],
-                ["def", false]
-            ]), false],
-            [new Map([]), true],
-        ]
-    );
-    evaluate(
-        new Type("Map & [...[string, boolean]]"), [
-            [new Map([
-                ["abc", true],
-                ["def", false]
-            ]), true],
-            [new Map([
-                ["abc", 1],
-                ["def", false]
-            ]), false],
-            [new Map([]), true],
-        ]
-    );
+    // evaluate(
+    //     new Type("Map<string, boolean>"), [
+    //         [new Map([
+    //             ["abc", true],
+    //             ["def", false]
+    //         ]), true],
+    //         [new Map([
+    //             ["abc", 1],
+    //             ["def", false]
+    //         ]), false],
+    //         [new Map([]), true],
+    //     ]
+    // );
+    // evaluate(
+    //     new Type("Map & [...[string, boolean]]"), [
+    //         [new Map([
+    //             ["abc", true],
+    //             ["def", false]
+    //         ]), true],
+    //         [new Map([
+    //             ["abc", 1],
+    //             ["def", false]
+    //         ]), false],
+    //         [new Map([]), true],
+    //     ]
+    // );
 });

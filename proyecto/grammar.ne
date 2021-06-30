@@ -6,33 +6,33 @@
 const lexer = require("./lexer.js");
 
 const atomCheckers = new Map([
-    ["number", value => {
+    ["number", (value, instance) => {
         return (typeof(value) === "number");
     }],
-    ["boolean", value => {
+    ["boolean", (value, instance) => {
         return (typeof(value) === "boolean");
     }],
-    ["string", value => {
+    ["string", (value, instance) => {
         return (typeof(value) === "string");
     }],
-    ["undefined", value => typeof(value) === "undefined"],
-    ["function", value => typeof(value) === "function"],
-    ["object", value => typeof(value) === "object"],
-    ["symbol", value => typeof(value) === "symbol"],
-    ["bigint", value => typeof(value) === "bigint"],
-    ["void", value => (value === null || typeof(value) === "undefined")], // typeof(null) = 'object' instead of 'null'
-    ["int", value => (typeof(value) === "number" && Number.isInteger(value))],
-    ["double", value => (typeof(value) === "number" && !Number.isInteger(value))],
-    ["char", value => (typeof(value) === "string" && value.length === 1)],
-    ["byte", value => (typeof(value) === "number" && value >= 0 && value <= 255 && parseInt(value) === value)],
-    ["_", value => true],
-    ["any", value => true],
+    ["undefined", (value, instance) => typeof(value) === "undefined"],
+    ["function", (value, instance) => typeof(value) === "function"],
+    ["object", (value, instance) => typeof(value) === "object"],
+    ["symbol", (value, instance) => typeof(value) === "symbol"],
+    ["bigint", (value, instance) => typeof(value) === "bigint"],
+    ["void", (value, instance) => (value === null || typeof(value) === "undefined")], // typeof(null) = 'object' instead of 'null'
+    ["int", (value, instance) => (typeof(value) === "number" && Number.isInteger(value))],
+    ["double", (value, instance) => (typeof(value) === "number" && !Number.isInteger(value))],
+    ["char", (value, instance) => (typeof(value) === "string" && value.length === 1)],
+    ["byte", (value, instance) => (typeof(value) === "number" && value >= 0 && value <= 255 && parseInt(value) === value)],
+    ["_", (value, instance) => true],
+    ["any", (value, instance) => true],
 ]);
 
 const atomChecker = type => (atomCheckers.get(type));
 
 const iterationChecker = typeCheckers => {
-    return (checkValues => {
+    return ((checkValues, instance) => {
         // Copies values and also converts Map,
         // and Set to a regular Array
         // Note: this is needed because we are
@@ -51,14 +51,14 @@ const iterationChecker = typeCheckers => {
                     if (values[v] === undefined) break;
 
                     // Try to check until it finds a mismatch
-                    while (currentChecker.checker(values[v])) {
+                    while (currentChecker.checker(values[v], instance)) {
                         v++;
                         if (values[v] === undefined) break;
                     };
                     break;
                 case "one":
                     if (values[v] === undefined) return false;              // No values left so it's a mismatch
-                    if (!currentChecker.checker(values[v])) return false;   // Value doesn't match type
+                    if (!currentChecker.checker(values[v], instance)) return false;   // Value doesn't match type
                     v++;
                     break;
             }
@@ -87,14 +87,14 @@ const objectPropChecker = (name, typeChecker, parseKey) => {
 // - "one" should and will count 1 (because objects won't allow duplicates)
 // - "oneRegex" should count 1, but it might remove more than one key
 // - "zeroPlusRegex" would accept any count, might remove zero or more
-const matchKeysWithCheckers = (object, typeCheckerPair) => {
+const matchKeysWithCheckers = (object, typeCheckerPair, instance) => {
     let count = 0;
     const checkers = typeCheckerPair.checkerPair;
     let keysToRemove = [];
 
     // Check for key/value
     for (const [key, value] of Object.entries(object)) {
-        if (checkers[0](key) && checkers[1](value)) {
+        if (checkers[0](key, instance) && checkers[1](value, instance)) {
             count++;
             keysToRemove.push(key);
         }
@@ -107,7 +107,7 @@ const matchKeysWithCheckers = (object, typeCheckerPair) => {
 };
 
 const objectChecker = typeCheckerPairs => {
-    return (checkObject => {
+    return ((checkObject, instance) => {
         if (typeof checkObject != "object") return false;
 
         // Copy of original object. because we
@@ -127,7 +127,7 @@ const objectChecker = typeCheckerPairs => {
             switch (typeCheckerPairs[c].type) {
                 case "oneRegex":
                 case "one":
-                    matchCount = matchKeysWithCheckers(object, currentCheckerPair);
+                    matchCount = matchKeysWithCheckers(object, currentCheckerPair, instance);
 
                     // For those types we should always match
                     // exactly one key
@@ -135,7 +135,7 @@ const objectChecker = typeCheckerPairs => {
                     break;
 
                 case "nRegex":
-                    matchCount = matchKeysWithCheckers(object, currentCheckerPair);
+                    matchCount = matchKeysWithCheckers(object, currentCheckerPair, instance);
 
                     // For this type we should always match
                     // exactly "n" (from ...n * /re/)
@@ -145,7 +145,7 @@ const objectChecker = typeCheckerPairs => {
                 case "zeroPlusRegex":
                     // For this type we just remove everything we
                     // can and we don't care about its count
-                    matchKeysWithCheckers(object, currentCheckerPair);
+                    matchKeysWithCheckers(object, currentCheckerPair, instance);
                     break;
 
                 case "spread":
@@ -194,7 +194,7 @@ atom -> %any {% ([type]) => atomChecker(type.value) %}
 
 # in [value1, value2]
 inclusion -> %xin %lsb values %rsb {% ([ , , values, ]) => {
-    return ((value) => values.includes(value));
+    return ((value, instance) => values.includes(value));
 } %}
 
 values -> values %separator value {% ([values, , value]) => { return [...values, ...value]; } %}
@@ -208,10 +208,10 @@ value -> %booleans {% ([token]) => {
 
 # javascript values (string, boolean or number)
 # TODO: agregar %string y %number
-valueCheck -> %booleans {% ([token]) => ((value) => (value === JSON.parse(token.value))) %}
+valueCheck -> %booleans {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
 
 # /{regexp}/
-regularExpr -> %regexp {% ([regExp]) => ((value) => {
+regularExpr -> %regexp {% ([regExp]) => ((value, instance) => {
     return (new RegExp(regExp.value.slice(1,-1)).test(value.toString()));
 }) %}
 
@@ -219,19 +219,19 @@ regularExpr -> %regexp {% ([regExp]) => ((value) => {
 group -> %lp T %rp {% ([lp, expr, rp]) => expr %}
 
 # !type
-negation -> %not T {% ([not, typeChecker]) => ((value) => (!typeChecker(value))) %}
+negation -> %not T {% ([not, typeChecker]) => ((value, instance) => (!typeChecker(value, instance))) %}
 
 # type1 & type2
-conjunction -> T %and T {% ([typeChecker1, and, typeChecker2]) => ((value) => (typeChecker1(value) && typeChecker2(value))) %}
+conjunction -> T %and T {% ([typeChecker1, and, typeChecker2]) => ((value, instance) => (typeChecker1(value, instance) && typeChecker2(value, instance))) %}
 
 # type1 | type2
-disjunction -> T %or T {% ([typeChecker1, or, typeChecker2]) => ((value) => (typeChecker1(value) || typeChecker2(value))) %}
+disjunction -> T %or T {% ([typeChecker1, or, typeChecker2]) => ((value, instance) => (typeChecker1(value, instance) || typeChecker2(value, instance))) %}
 
 # type1 - type2
-minus -> T %sub T {% ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value))) %}
+minus -> T %sub T {% ([typeChecker1, sub, typeChecker2]) => ((value, instance) => (typeChecker1(value, instance) && !typeChecker2(value, instance))) %}
 
 # [...]
-list -> %lsb %spread %rsb {% ([lsb, spread, rsb]) => ((values) => Array.isArray(values)) %}
+list -> %lsb %spread %rsb {% ([lsb, spread, rsb]) => ((values, instance) => Array.isArray(values)) %}
 
 # [type1, type2, type3]
 list -> %lsb listValues %rsb {% ([, typeCheckers, ]) => iterationChecker(typeCheckers) %}
@@ -314,36 +314,25 @@ objectProp -> %spread %integer %mult regularExpr %colon T {% ([, n, , typeChecke
 
 # Class
 classConstructor -> dynamicName {% ([typeChecker]) => typeChecker %}
-# Class<type>
-classConstructor -> dynamicName %lt T %gt {% ([typeChecker1, , typeChecker2, ]) => {
-    // Iteration checker for a [...type]
-    let iterableChecker = iterationChecker([{
-        checker: typeChecker2,
-        type: "zeroPlus"
-    }]);
-    return ((values) => typeChecker1(values) && iterableChecker(values));
+# Class<type1, typeN>
+classConstructor -> %identifier %lt classCheckers %gt {% ([name, , typeCheckers, ]) => {
+    const className = name.value;
+    return ((values, instance) => {
+        const clazz = instance.classCheckers[className]; // [Class, Fun]
+        clazz || (function() { throw `Invalid class name "${className}"` }());
+        return values instanceof clazz[0] && clazz[1](values, typeCheckers);
+    });
 } %}
-# Class<type1, type2>
-classConstructor -> dynamicName %lt T %separator T %gt {% ([typeChecker1, , typeChecker2, , typeChecker3, ]) => {
-    // Iteration checker for a [...[type1, type2]]
-    let iterableChecker = iterationChecker([{
-        checker: (values => {
-            return typeChecker2(values[0]) && typeChecker3(values[1]);
-        }),
-        type: "zeroPlus"
-    }]);
-    return ((values) => typeChecker1(values) && iterableChecker(values));
+classCheckers -> classChecker {% ([type]) => type %}
+classCheckers -> classCheckers %separator classChecker {% ([typeCheckers, , typeChecker]) => {
+    return [...typeCheckers, ...typeChecker];
 } %}
-# TODO: ver qué tan rancio es esto
+classChecker -> T {% ([typeChecker]) => [typeChecker] %}
 dynamicName -> %identifier {% ([name]) => {
-    let className = name.value;
-
-    if (className.charAt(0) !== className.charAt(0).toUpperCase()) {
-        throw new SyntaxError(`Invalid type "${className}"`);
-    }
-
-    // Hack-ish way to check if a class actually exists
-    eval(`${className}.name`);
-
-    return ((value) => eval(`value instanceof ${className}`));
+    const className = name.value;
+    return ((value, instance) => {
+        const clazz = instance.classCheckers[className]; // [Class, Fun]
+        clazz || (function() { throw `Invalid class name "${className}"` }());
+        return value instanceof clazz[0];
+    });
 } %}

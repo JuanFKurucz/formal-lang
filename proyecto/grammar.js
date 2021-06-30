@@ -10,33 +10,33 @@ function id(x) { return x[0]; }
 const lexer = require("./lexer.js");
 
 const atomCheckers = new Map([
-    ["number", value => {
+    ["number", (value, instance) => {
         return (typeof(value) === "number");
     }],
-    ["boolean", value => {
+    ["boolean", (value, instance) => {
         return (typeof(value) === "boolean");
     }],
-    ["string", value => {
+    ["string", (value, instance) => {
         return (typeof(value) === "string");
     }],
-    ["undefined", value => typeof(value) === "undefined"],
-    ["function", value => typeof(value) === "function"],
-    ["object", value => typeof(value) === "object"],
-    ["symbol", value => typeof(value) === "symbol"],
-    ["bigint", value => typeof(value) === "bigint"],
-    ["void", value => (value === null || typeof(value) === "undefined")], // typeof(null) = 'object' instead of 'null'
-    ["int", value => (typeof(value) === "number" && Number.isInteger(value))],
-    ["double", value => (typeof(value) === "number" && !Number.isInteger(value))],
-    ["char", value => (typeof(value) === "string" && value.length === 1)],
-    ["byte", value => (typeof(value) === "number" && value >= 0 && value <= 255 && parseInt(value) === value)],
-    ["_", value => true],
-    ["any", value => true],
+    ["undefined", (value, instance) => typeof(value) === "undefined"],
+    ["function", (value, instance) => typeof(value) === "function"],
+    ["object", (value, instance) => typeof(value) === "object"],
+    ["symbol", (value, instance) => typeof(value) === "symbol"],
+    ["bigint", (value, instance) => typeof(value) === "bigint"],
+    ["void", (value, instance) => (value === null || typeof(value) === "undefined")], // typeof(null) = 'object' instead of 'null'
+    ["int", (value, instance) => (typeof(value) === "number" && Number.isInteger(value))],
+    ["double", (value, instance) => (typeof(value) === "number" && !Number.isInteger(value))],
+    ["char", (value, instance) => (typeof(value) === "string" && value.length === 1)],
+    ["byte", (value, instance) => (typeof(value) === "number" && value >= 0 && value <= 255 && parseInt(value) === value)],
+    ["_", (value, instance) => true],
+    ["any", (value, instance) => true],
 ]);
 
 const atomChecker = type => (atomCheckers.get(type));
 
 const iterationChecker = typeCheckers => {
-    return (checkValues => {
+    return ((checkValues, instance) => {
         // Copies values and also converts Map,
         // and Set to a regular Array
         // Note: this is needed because we are
@@ -55,14 +55,14 @@ const iterationChecker = typeCheckers => {
                     if (values[v] === undefined) break;
 
                     // Try to check until it finds a mismatch
-                    while (currentChecker.checker(values[v])) {
+                    while (currentChecker.checker(values[v], instance)) {
                         v++;
                         if (values[v] === undefined) break;
                     };
                     break;
                 case "one":
                     if (values[v] === undefined) return false;              // No values left so it's a mismatch
-                    if (!currentChecker.checker(values[v])) return false;   // Value doesn't match type
+                    if (!currentChecker.checker(values[v], instance)) return false;   // Value doesn't match type
                     v++;
                     break;
             }
@@ -91,14 +91,14 @@ const objectPropChecker = (name, typeChecker, parseKey) => {
 // - "one" should and will count 1 (because objects won't allow duplicates)
 // - "oneRegex" should count 1, but it might remove more than one key
 // - "zeroPlusRegex" would accept any count, might remove zero or more
-const matchKeysWithCheckers = (object, typeCheckerPair) => {
+const matchKeysWithCheckers = (object, typeCheckerPair, instance) => {
     let count = 0;
     const checkers = typeCheckerPair.checkerPair;
     let keysToRemove = [];
 
     // Check for key/value
     for (const [key, value] of Object.entries(object)) {
-        if (checkers[0](key) && checkers[1](value)) {
+        if (checkers[0](key, instance) && checkers[1](value, instance)) {
             count++;
             keysToRemove.push(key);
         }
@@ -111,7 +111,7 @@ const matchKeysWithCheckers = (object, typeCheckerPair) => {
 };
 
 const objectChecker = typeCheckerPairs => {
-    return (checkObject => {
+    return ((checkObject, instance) => {
         if (typeof checkObject != "object") return false;
 
         // Copy of original object. because we
@@ -131,7 +131,7 @@ const objectChecker = typeCheckerPairs => {
             switch (typeCheckerPairs[c].type) {
                 case "oneRegex":
                 case "one":
-                    matchCount = matchKeysWithCheckers(object, currentCheckerPair);
+                    matchCount = matchKeysWithCheckers(object, currentCheckerPair, instance);
 
                     // For those types we should always match
                     // exactly one key
@@ -139,7 +139,7 @@ const objectChecker = typeCheckerPairs => {
                     break;
 
                 case "nRegex":
-                    matchCount = matchKeysWithCheckers(object, currentCheckerPair);
+                    matchCount = matchKeysWithCheckers(object, currentCheckerPair, instance);
 
                     // For this type we should always match
                     // exactly "n" (from ...n * /re/)
@@ -149,7 +149,7 @@ const objectChecker = typeCheckerPairs => {
                 case "zeroPlusRegex":
                     // For this type we just remove everything we
                     // can and we don't care about its count
-                    matchKeysWithCheckers(object, currentCheckerPair);
+                    matchKeysWithCheckers(object, currentCheckerPair, instance);
                     break;
 
                 case "spread":
@@ -190,7 +190,7 @@ var grammar = {
     {"name": "atom", "symbols": [(lexer.has("byte") ? {type: "byte"} : byte)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("any") ? {type: "any"} : any)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "inclusion", "symbols": [(lexer.has("xin") ? {type: "xin"} : xin), (lexer.has("lsb") ? {type: "lsb"} : lsb), "values", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess":  ([ , , values, ]) => {
-            return ((value) => values.includes(value));
+            return ((value, instance) => values.includes(value));
         } },
     {"name": "values", "symbols": ["values", (lexer.has("separator") ? {type: "separator"} : separator), "value"], "postprocess": ([values, , value]) => { return [...values, ...value]; }},
     {"name": "values", "symbols": ["value"], "postprocess": ([value]) => { return value; }},
@@ -199,16 +199,16 @@ var grammar = {
             // in order to throw an error while parsing
             return [JSON.parse(token.value)];
         } },
-    {"name": "valueCheck", "symbols": [(lexer.has("booleans") ? {type: "booleans"} : booleans)], "postprocess": ([token]) => ((value) => (value === JSON.parse(token.value)))},
-    {"name": "regularExpr", "symbols": [(lexer.has("regexp") ? {type: "regexp"} : regexp)], "postprocess":  ([regExp]) => ((value) => {
+    {"name": "valueCheck", "symbols": [(lexer.has("booleans") ? {type: "booleans"} : booleans)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
+    {"name": "regularExpr", "symbols": [(lexer.has("regexp") ? {type: "regexp"} : regexp)], "postprocess":  ([regExp]) => ((value, instance) => {
             return (new RegExp(regExp.value.slice(1,-1)).test(value.toString()));
         }) },
     {"name": "group", "symbols": [(lexer.has("lp") ? {type: "lp"} : lp), "T", (lexer.has("rp") ? {type: "rp"} : rp)], "postprocess": ([lp, expr, rp]) => expr},
-    {"name": "negation", "symbols": [(lexer.has("not") ? {type: "not"} : not), "T"], "postprocess": ([not, typeChecker]) => ((value) => (!typeChecker(value)))},
-    {"name": "conjunction", "symbols": ["T", (lexer.has("and") ? {type: "and"} : and), "T"], "postprocess": ([typeChecker1, and, typeChecker2]) => ((value) => (typeChecker1(value) && typeChecker2(value)))},
-    {"name": "disjunction", "symbols": ["T", (lexer.has("or") ? {type: "or"} : or), "T"], "postprocess": ([typeChecker1, or, typeChecker2]) => ((value) => (typeChecker1(value) || typeChecker2(value)))},
-    {"name": "minus", "symbols": ["T", (lexer.has("sub") ? {type: "sub"} : sub), "T"], "postprocess": ([typeChecker1, sub, typeChecker2]) => ((value) => (typeChecker1(value) && !typeChecker2(value)))},
-    {"name": "list", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([lsb, spread, rsb]) => ((values) => Array.isArray(values))},
+    {"name": "negation", "symbols": [(lexer.has("not") ? {type: "not"} : not), "T"], "postprocess": ([not, typeChecker]) => ((value, instance) => (!typeChecker(value, instance)))},
+    {"name": "conjunction", "symbols": ["T", (lexer.has("and") ? {type: "and"} : and), "T"], "postprocess": ([typeChecker1, and, typeChecker2]) => ((value, instance) => (typeChecker1(value, instance) && typeChecker2(value, instance)))},
+    {"name": "disjunction", "symbols": ["T", (lexer.has("or") ? {type: "or"} : or), "T"], "postprocess": ([typeChecker1, or, typeChecker2]) => ((value, instance) => (typeChecker1(value, instance) || typeChecker2(value, instance)))},
+    {"name": "minus", "symbols": ["T", (lexer.has("sub") ? {type: "sub"} : sub), "T"], "postprocess": ([typeChecker1, sub, typeChecker2]) => ((value, instance) => (typeChecker1(value, instance) && !typeChecker2(value, instance)))},
+    {"name": "list", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), (lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([lsb, spread, rsb]) => ((values, instance) => Array.isArray(values))},
     {"name": "list", "symbols": [(lexer.has("lsb") ? {type: "lsb"} : lsb), "listValues", (lexer.has("rsb") ? {type: "rsb"} : rsb)], "postprocess": ([, typeCheckers, ]) => iterationChecker(typeCheckers)},
     {"name": "listValues", "symbols": ["listValues", (lexer.has("separator") ? {type: "separator"} : separator), "listValue"], "postprocess":  ([typeCheckers, , typeChecker]) => {
             return [...typeCheckers, ...typeChecker];
@@ -275,35 +275,26 @@ var grammar = {
             }];
         } },
     {"name": "classConstructor", "symbols": ["dynamicName"], "postprocess": ([typeChecker]) => typeChecker},
-    {"name": "classConstructor", "symbols": ["dynamicName", (lexer.has("lt") ? {type: "lt"} : lt), "T", (lexer.has("gt") ? {type: "gt"} : gt)], "postprocess":  ([typeChecker1, , typeChecker2, ]) => {
-            // Iteration checker for a [...type]
-            let iterableChecker = iterationChecker([{
-                checker: typeChecker2,
-                type: "zeroPlus"
-            }]);
-            return ((values) => typeChecker1(values) && iterableChecker(values));
+    {"name": "classConstructor", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lt") ? {type: "lt"} : lt), "classCheckers", (lexer.has("gt") ? {type: "gt"} : gt)], "postprocess":  ([name, , typeCheckers, ]) => {
+            const className = name.value;
+            return ((values, instance) => {
+                const clazz = instance.classCheckers[className]; // [Class, Fun]
+                clazz || (function() { throw `Invalid class name "${className}"` }());
+                return values instanceof clazz[0] && clazz[1](values, typeCheckers);
+            });
         } },
-    {"name": "classConstructor", "symbols": ["dynamicName", (lexer.has("lt") ? {type: "lt"} : lt), "T", (lexer.has("separator") ? {type: "separator"} : separator), "T", (lexer.has("gt") ? {type: "gt"} : gt)], "postprocess":  ([typeChecker1, , typeChecker2, , typeChecker3, ]) => {
-            // Iteration checker for a [...[type1, type2]]
-            let iterableChecker = iterationChecker([{
-                checker: (values => {
-                    return typeChecker2(values[0]) && typeChecker3(values[1]);
-                }),
-                type: "zeroPlus"
-            }]);
-            return ((values) => typeChecker1(values) && iterableChecker(values));
+    {"name": "classCheckers", "symbols": ["classChecker"], "postprocess": ([type]) => type},
+    {"name": "classCheckers", "symbols": ["classCheckers", (lexer.has("separator") ? {type: "separator"} : separator), "classChecker"], "postprocess":  ([typeCheckers, , typeChecker]) => {
+            return [...typeCheckers, ...typeChecker];
         } },
+    {"name": "classChecker", "symbols": ["T"], "postprocess": ([typeChecker]) => [typeChecker]},
     {"name": "dynamicName", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess":  ([name]) => {
-            let className = name.value;
-        
-            if (className.charAt(0) !== className.charAt(0).toUpperCase()) {
-                throw new SyntaxError(`Invalid type "${className}"`);
-            }
-        
-            // Hack-ish way to check if a class actually exists
-            eval(`${className}.name`);
-        
-            return ((value) => eval(`value instanceof ${className}`));
+            const className = name.value;
+            return ((value, instance) => {
+                const clazz = instance.classCheckers[className]; // [Class, Fun]
+                clazz || (function() { throw `Invalid class name "${className}"` }());
+                return value instanceof clazz[0];
+            });
         } }
 ]
   , ParserStart: "E"

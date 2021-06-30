@@ -9,6 +9,15 @@ class Type {
      * @param {boolean} debug debug mode toggle
      */
     constructor(type, checkers = [], debug = false) {
+
+        this.checkers = checkers;
+        this.classCheckers = {};
+
+        // // TODO: borrar
+        // this.checkers.push([
+        //     [((x, instance) => true)],
+        // ]);
+
         typeof(type) === "string" || (function() { throw "type should be a string" }());
 
         this.parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
@@ -35,7 +44,11 @@ class Type {
      * @param {*} value any value
      */
     checks(value) {
-        return this.checker(value);
+        return this.checker(value, this);
+    }
+
+    classChecker(clazz, typeChecker) {
+        this.classCheckers[clazz.name] = [clazz, typeChecker];
     }
 
     /**
@@ -53,9 +66,25 @@ class Type {
 
 }
 
-let instance = new Type("boolean");
-console.log(instance.demand(true));
-// console.log(instance.demand("string"));
+// let instance = new Type("Map<string>", [], true);
+
+instance.classChecker(Array, (values, typeCheckers) => {
+    const [typeChecker] = typeCheckers;
+    return typeCheckers.length == 1 && values.every((value) => typeChecker(value));
+});
+
+instance.classChecker(Set, (values, typeCheckers) => {
+    const [typeChecker] = typeCheckers;
+    return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
+});
+
+instance.classChecker(Set, (values, typeCheckers) => {
+    const [typeChecker] = typeCheckers;
+    return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
+});
+
+console.log(instance.checks(new Set([true, false])));
+console.log(instance.checks(new Set([true, false])));
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = Type;
