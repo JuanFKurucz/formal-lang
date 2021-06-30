@@ -33,14 +33,9 @@ const atomChecker = type => (atomCheckers.get(type));
 
 const iterationChecker = typeCheckers => {
     return ((checkValues, instance) => {
-        // Copies values and also converts Map,
-        // and Set to a regular Array
-        // Note: this is needed because we are
-        // re-using this function check for Maps
-        // and Sets, not just Arrays
-        let values = checkValues instanceof Map
-                    ? Array.from(checkValues.entries())
-                    : Array.from(checkValues);
+
+        // Copy original values
+        let values = Array.from(checkValues);
 
         let v = 0; // index of current value
         for (let c = 0; c < typeCheckers.length; c++) {

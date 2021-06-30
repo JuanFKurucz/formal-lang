@@ -47,6 +47,12 @@ class Type {
         return this.checker(value, this);
     }
 
+    /**
+     * Add new class and its corresponding checker
+     * function
+     * @param {class} clazz 
+     * @param {function} typeChecker 
+     */
     classChecker(clazz, typeChecker) {
         this.classCheckers[clazz.name] = [clazz, typeChecker];
     }
@@ -66,7 +72,7 @@ class Type {
 
 }
 
-// let instance = new Type("Map<string>", [], true);
+let instance = new Type("Map<number, boolean>", [], true);
 
 instance.classChecker(Array, (values, typeCheckers) => {
     const [typeChecker] = typeCheckers;
@@ -78,13 +84,12 @@ instance.classChecker(Set, (values, typeCheckers) => {
     return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
 });
 
-instance.classChecker(Set, (values, typeCheckers) => {
-    const [typeChecker] = typeCheckers;
-    return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
+instance.classChecker(Map, (values, typeCheckers) => {
+    if (typeCheckers.length != 2) return false;
+    for (const [key, value] of Array.from(values.entries()))
+        if (!(typeCheckers[0](key) && typeCheckers[1](value))) return false;
+    return true;
 });
-
-console.log(instance.checks(new Set([true, false])));
-console.log(instance.checks(new Set([true, false])));
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = Type;

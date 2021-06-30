@@ -9,18 +9,24 @@ const predefinedClassCheckers = [
     [Set, (values, typeCheckers) => {
         const [typeChecker] = typeCheckers;
         return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
+    }],
+    [Map, (values, typeCheckers) => {
+        if (typeCheckers.length != 2) return false;
+        for (const [key, value] of Array.from(values.entries()))
+            if (!(typeCheckers[0](key) && typeCheckers[1](value))) return false;
+        return true
     }]
 ]
 
-const createInstanceType = (type,overridePredifined=[]) => {
+const createInstanceType = (type, overridePredifined = []) => {
     const instance = new Type(type);
-    if(overridePredifined.length){
-        overridePredifined.forEach(x=>{
-            instance.classChecker(x[0],x[1]);
+    if (overridePredifined.length) {
+        overridePredifined.forEach(x => {
+            instance.classChecker(x[0], x[1]);
         });
     } else {
-        predefinedClassCheckers.forEach(x=>{
-            instance.classChecker(x[0],x[1]);
+        predefinedClassCheckers.forEach(x => {
+            instance.classChecker(x[0], x[1]);
         });
     }
     return instance;
@@ -419,30 +425,30 @@ describe('constructs', function() {
             [new Array(), true],
         ]
     );
-    // evaluate(
-    //     createInstanceType("Map<string, boolean>"), [
-    //         [new Map([
-    //             ["abc", true],
-    //             ["def", false]
-    //         ]), true],
-    //         [new Map([
-    //             ["abc", 1],
-    //             ["def", false]
-    //         ]), false],
-    //         [new Map([]), true],
-    //     ]
-    // );
-    // evaluate(
-    //     createInstanceType("Map & [...[string, boolean]]"), [
-    //         [new Map([
-    //             ["abc", true],
-    //             ["def", false]
-    //         ]), true],
-    //         [new Map([
-    //             ["abc", 1],
-    //             ["def", false]
-    //         ]), false],
-    //         [new Map([]), true],
-    //     ]
-    // );
+    evaluate(
+        createInstanceType("Map<string, boolean>"), [
+            [new Map([
+                ["abc", true],
+                ["def", false]
+            ]), true],
+            [new Map([
+                ["abc", 1],
+                ["def", false]
+            ]), false],
+            [new Map([]), true],
+        ]
+    );
+    evaluate(
+        createInstanceType("Map & [...[string, boolean]]"), [
+            [new Map([
+                ["abc", true],
+                ["def", false]
+            ]), true],
+            [new Map([
+                ["abc", 1],
+                ["def", false]
+            ]), false],
+            [new Map([]), true],
+        ]
+    );
 });
