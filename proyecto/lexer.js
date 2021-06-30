@@ -3,7 +3,7 @@ const moo = require("moo");
 const lexer = moo.compile({
     xnumber: ["number"],
     xundefined: ["undefined"],
-    boolean: ["boolean"],
+    xboolean: ["boolean"],
     xstring: ["string"],
     xfunction: ["function"],
     object: ["object"],
@@ -15,43 +15,30 @@ const lexer = moo.compile({
     char: ["char"],
     byte: ["byte"],
     any: ["_", "any"],
-
     spread: ["..."],
-
     regexp: /\/(?:[^\n\\\/]|\\[^\n])+\//,
-
     xin: ["in"],
-    booleans: ["true", "false"],
-
+    boolean: ["true", "false"],
     separator: /,/,
-
     not: /!/,
     and: /&/,
     or: /\|/,
     sub: /-/,
-
     mult: /\*/,
-
     lp: /\(/,
     rp: /\)/,
-
     lsb: /\[/,
     rsb: /\]/,
-
     lb: /{/,
     rb: /}/,
-
     lt: /</,
     gt: />/,
-
     colon: /:/,
-
     pe: /\$/,
-
-    string: /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/,
-    identifier: /[a-zA-Z_\$][\w$]*/, // TODO: mejorar esto o está bien?
     integer: /[0-9]+/,
-
+    number: /NaN|[+-]?Infinity|[+-]?0[xX][0-9a-fA-F]+|[+-]?(?:\d*(?:\d\.?|\.\d)\d*)(?:[eE][-+]?\d+)?/,
+    string: /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/,
+    identifier: /[a-zA-Z_\$][\w$]*/,
     ws: { match: /\s+/, lineBreaks: true },
 });
 

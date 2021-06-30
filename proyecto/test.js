@@ -1,34 +1,11 @@
 const assert = require('assert');
 const Type = require("./tyjs.js");
 
-const predefinedClassCheckers = [
-    [Array, (values, typeCheckers) => {
-        const [typeChecker] = typeCheckers;
-        return typeCheckers.length == 1 && values.every((value) => typeChecker(value));
-    }],
-    [Set, (values, typeCheckers) => {
-        const [typeChecker] = typeCheckers;
-        return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
-    }],
-    [Map, (values, typeCheckers) => {
-        if (typeCheckers.length != 2) return false;
-        for (const [key, value] of Array.from(values.entries()))
-            if (!(typeCheckers[0](key) && typeCheckers[1](value))) return false;
-        return true
-    }]
-]
-
-const createInstanceType = (type, overridePredifined = []) => {
-    const instance = new Type(type);
-    if (overridePredifined.length) {
-        overridePredifined.forEach(x => {
-            instance.classChecker(x[0], x[1]);
-        });
-    } else {
-        predefinedClassCheckers.forEach(x => {
-            instance.classChecker(x[0], x[1]);
-        });
-    }
+const createInstanceType = (type, overridePredifined = [], customCheckers = []) => {
+    const instance = new Type(type, customCheckers);
+    overridePredifined.forEach(x => {
+        instance.classChecker(x[0], x[1]);
+    });
     return instance;
 }
 
@@ -196,8 +173,6 @@ describe('combination', function() {
     // }
 });
 
-// TODO: tests para regex y algunos combinaciones
-
 describe('values', function() {
     evaluate(
         createInstanceType("boolean & true"), [
@@ -211,7 +186,36 @@ describe('values', function() {
             [true, true],
         ]
     );
-    // TODO: tests para strings y numbers
+    evaluate(
+        createInstanceType("true | false"), [
+            [false, true],
+            [true, true],
+        ]
+    );
+    evaluate(
+        createInstanceType("\"abc\" | boolean"), [
+            [false, true],
+            [true, true],
+            ["def", false],
+            ["abc", true],
+        ]
+    );
+    evaluate(
+        createInstanceType("1 | boolean"), [
+            [false, true],
+            [true, true],
+            [1, true],
+            [2, false],
+        ]
+    );
+    // evaluate(
+    //     createInstanceType("1.5 | boolean"), [
+    //         [false, true],
+    //         [true, true],
+    //         [NaN, true],
+    //         [2, false],
+    //     ]
+    // );
 });
 
 describe('inclusions', function() {
@@ -227,7 +231,6 @@ describe('inclusions', function() {
             [true, true],
         ]
     );
-    // TODO: tests para strings y numbers
 });
 
 describe('iterables', function() {
@@ -328,8 +331,6 @@ describe('iterables', function() {
             ],
         ]
     );
-    // TODO: revisar: [string, ...[boolean, string]]
-    // Parece que falla sólo en el test, en tyjs.js no
     evaluate(
         createInstanceType("[...[boolean, string]]"), [
             [
@@ -449,6 +450,38 @@ describe('constructs', function() {
                 ["def", false]
             ]), false],
             [new Map([]), true],
+        ]
+    );
+});
+
+describe('custom', function() {
+    evaluate(
+        createInstanceType("[$0, $1]", [], [(value => value % 2 == 0), (value => value == 5)]), [
+            [
+                [2, 5], true
+            ],
+            [
+                [1, 5], false
+            ],
+            [
+                [4, 5], true
+            ],
+            [
+                [4, 3], false
+            ],
+        ]
+    );
+    evaluate(
+        createInstanceType("[$0, [...$1]]", [], [(value => value % 2 == 0), (value => value == 5)]), [
+            [
+                [2, [5, 5, 5]], true
+            ],
+            [
+                [2, [5, 4, 5]], false
+            ],
+            [
+                [1, [5, 5, 5]], false
+            ],
         ]
     );
 });

@@ -1,8 +1,4 @@
 @{%
-
-// TODO: Comentar todos los console logs!!!
-// TODO: ver todos los TODOs que hayan por ahí
-
 const lexer = require("./lexer.js");
 
 const atomCheckers = new Map([
@@ -175,7 +171,7 @@ T -> customChecker {% ([x]) => x %}
 # Atoms
 atom -> %xnumber {% ([type]) => atomChecker(type.value) %}
 atom -> %xundefined {% ([type]) => atomChecker(type.value) %}
-atom -> %boolean {% ([type]) => atomChecker(type.value) %}
+atom -> %xboolean {% ([type]) => atomChecker(type.value) %}
 atom -> %xstring {% ([type]) => atomChecker(type.value) %}
 atom -> %xfunction {% ([type]) => atomChecker(type.value) %}
 atom -> %object {% ([type]) => atomChecker(type.value) %}
@@ -195,16 +191,16 @@ inclusion -> %xin %lsb values %rsb {% ([ , , values, ]) => {
 
 values -> values %separator value {% ([values, , value]) => { return [...values, ...value]; } %}
 values -> value {% ([value]) => { return value; } %}
-# TODO: agregar %string y %number
-value -> %booleans {% ([token]) => {
-    // Note: we're deserializing here on purpose
-    // in order to throw an error while parsing
-    return [JSON.parse(token.value)];
-} %}
+value -> %boolean {% ([token]) => [JSON.parse(token.value)] %}
+value -> %string {% ([token]) => [JSON.parse(token.value)] %}
+value -> %number {% ([token]) => [JSON.parse(token.value)] %}
+value -> %integer {% ([token]) => [JSON.parse(token.value)] %}
 
 # javascript values (string, boolean or number)
-# TODO: agregar %string y %number
-valueCheck -> %booleans {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
+valueCheck -> %boolean {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
+valueCheck -> %string {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
+valueCheck -> %integer {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
+valueCheck -> %number {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
 
 # /{regexp}/
 regularExpr -> %regexp {% ([regExp]) => ((value, instance) => {
@@ -323,7 +319,7 @@ classConstructor -> dynamicName {% ([typeChecker]) => typeChecker %}
 classConstructor -> %identifier %lt classCheckers %gt {% ([name, , typeCheckers, ]) => {
     const className = name.value;
     return ((values, instance) => {
-        const clazz = instance.classCheckers[className]; // [Class, Fun]
+        const clazz = instance.getClassChecker()[className]; // [Class, Fun]
         clazz || (function() { throw `Invalid class name "${className}"` }());
         return values instanceof clazz[0] && clazz[1](values, typeCheckers);
     });
@@ -336,7 +332,7 @@ classChecker -> T {% ([typeChecker]) => [typeChecker] %}
 dynamicName -> %identifier {% ([name]) => {
     const className = name.value;
     return ((value, instance) => {
-        const clazz = instance.classCheckers[className]; // [Class, Fun]
+        const clazz = instance.getClassChecker()[className]; // [Class, Fun]
         clazz || (function() { throw `Invalid class name "${className}"` }());
         return value instanceof clazz[0];
     });

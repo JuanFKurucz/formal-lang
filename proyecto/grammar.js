@@ -3,10 +3,6 @@
 (function () {
 function id(x) { return x[0]; }
 
-
-// TODO: Comentar todos los console logs!!!
-// TODO: ver todos los TODOs que hayan por ahí
-
 const lexer = require("./lexer.js");
 
 const atomCheckers = new Map([
@@ -173,7 +169,7 @@ var grammar = {
     {"name": "T", "symbols": ["customChecker"], "postprocess": ([x]) => x},
     {"name": "atom", "symbols": [(lexer.has("xnumber") ? {type: "xnumber"} : xnumber)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xundefined") ? {type: "xundefined"} : xundefined)], "postprocess": ([type]) => atomChecker(type.value)},
-    {"name": "atom", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("xboolean") ? {type: "xboolean"} : xboolean)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xstring") ? {type: "xstring"} : xstring)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xfunction") ? {type: "xfunction"} : xfunction)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("object") ? {type: "object"} : object)], "postprocess": ([type]) => atomChecker(type.value)},
@@ -190,12 +186,14 @@ var grammar = {
         } },
     {"name": "values", "symbols": ["values", (lexer.has("separator") ? {type: "separator"} : separator), "value"], "postprocess": ([values, , value]) => { return [...values, ...value]; }},
     {"name": "values", "symbols": ["value"], "postprocess": ([value]) => { return value; }},
-    {"name": "value", "symbols": [(lexer.has("booleans") ? {type: "booleans"} : booleans)], "postprocess":  ([token]) => {
-            // Note: we're deserializing here on purpose
-            // in order to throw an error while parsing
-            return [JSON.parse(token.value)];
-        } },
-    {"name": "valueCheck", "symbols": [(lexer.has("booleans") ? {type: "booleans"} : booleans)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
+    {"name": "value", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([token]) => [JSON.parse(token.value)]},
+    {"name": "value", "symbols": [(lexer.has("string") ? {type: "string"} : string)], "postprocess": ([token]) => [JSON.parse(token.value)]},
+    {"name": "value", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([token]) => [JSON.parse(token.value)]},
+    {"name": "value", "symbols": [(lexer.has("integer") ? {type: "integer"} : integer)], "postprocess": ([token]) => [JSON.parse(token.value)]},
+    {"name": "valueCheck", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
+    {"name": "valueCheck", "symbols": [(lexer.has("string") ? {type: "string"} : string)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
+    {"name": "valueCheck", "symbols": [(lexer.has("integer") ? {type: "integer"} : integer)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
+    {"name": "valueCheck", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
     {"name": "regularExpr", "symbols": [(lexer.has("regexp") ? {type: "regexp"} : regexp)], "postprocess":  ([regExp]) => ((value, instance) => {
             return (new RegExp(regExp.value.slice(1,-1)).test(value.toString()));
         }) },
@@ -281,7 +279,7 @@ var grammar = {
     {"name": "classConstructor", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier), (lexer.has("lt") ? {type: "lt"} : lt), "classCheckers", (lexer.has("gt") ? {type: "gt"} : gt)], "postprocess":  ([name, , typeCheckers, ]) => {
             const className = name.value;
             return ((values, instance) => {
-                const clazz = instance.classCheckers[className]; // [Class, Fun]
+                const clazz = instance.getClassChecker()[className]; // [Class, Fun]
                 clazz || (function() { throw `Invalid class name "${className}"` }());
                 return values instanceof clazz[0] && clazz[1](values, typeCheckers);
             });
@@ -294,7 +292,7 @@ var grammar = {
     {"name": "dynamicName", "symbols": [(lexer.has("identifier") ? {type: "identifier"} : identifier)], "postprocess":  ([name]) => {
             const className = name.value;
             return ((value, instance) => {
-                const clazz = instance.classCheckers[className]; // [Class, Fun]
+                const clazz = instance.getClassChecker()[className]; // [Class, Fun]
                 clazz || (function() { throw `Invalid class name "${className}"` }());
                 return value instanceof clazz[0];
             });

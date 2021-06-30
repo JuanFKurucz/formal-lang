@@ -11,7 +11,7 @@ class Type {
     constructor(type, checkers = [], debug = false) {
 
         this.checkers = checkers;
-        this.classCheckers = {};
+        this.instanceClassCheckers = {};
 
         typeof(type) === "string" || (function() { throw "type should be a string" }());
 
@@ -33,6 +33,11 @@ class Type {
         this.type = type; // to improve output tests
     }
 
+    getClassChecker() {
+        const classCheckerConjuntion = {...Type.classCheckers, ...this.instanceClassCheckers };
+        return classCheckerConjuntion;
+    }
+
     /**
      * Checks whether a value belongs
      * to this instance's type
@@ -49,7 +54,7 @@ class Type {
      * @param {function} typeChecker 
      */
     classChecker(clazz, typeChecker) {
-        this.classCheckers[clazz.name] = [clazz, typeChecker];
+        this.instanceClassCheckers[clazz.name] = [clazz, typeChecker];
     }
 
     /**
@@ -65,33 +70,36 @@ class Type {
         }
     }
 
+
+    static classCheckers = {}
+
+    /**
+     * Add new class and its corresponding checker
+     * function
+     * @param {class} clazz 
+     * @param {function} typeChecker 
+     */
+    static classChecker(clazz, typeChecker) {
+        Type.classCheckers[clazz.name] = [clazz, typeChecker];
+    }
 }
 
-// let instance = new Type("Map<number, boolean>", [], true);
+Type.classChecker(Array, (values, typeCheckers) => {
+    const [typeChecker] = typeCheckers;
+    return typeCheckers.length == 1 && values.every((value) => typeChecker(value));
+});
 
-// instance.classChecker(Array, (values, typeCheckers) => {
-//     const [typeChecker] = typeCheckers;
-//     return typeCheckers.length == 1 && values.every((value) => typeChecker(value));
-// });
+Type.classChecker(Set, (values, typeCheckers) => {
+    const [typeChecker] = typeCheckers;
+    return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
+});
 
-// instance.classChecker(Set, (values, typeCheckers) => {
-//     const [typeChecker] = typeCheckers;
-//     return typeCheckers.length == 1 && Array.from(values).every((value) => typeChecker(value));
-// });
-
-// instance.classChecker(Map, (values, typeCheckers) => {
-//     if (typeCheckers.length != 2) return false;
-//     for (const [key, value] of Array.from(values.entries()))
-//         if (!(typeCheckers[0](key) && typeCheckers[1](value))) return false;
-//     return true;
-// });
-
-let instance = new Type("[$0, $1]", [
-    ((value) => value === 5),
-    ((value) => value === 10)
-]);
-
-console.log(instance.checks([5, 10]))
+Type.classChecker(Map, (values, typeCheckers) => {
+    if (typeCheckers.length != 2) return false;
+    for (const [key, value] of Array.from(values.entries()))
+        if (!(typeCheckers[0](key) && typeCheckers[1](value))) return false;
+    return true;
+});
 
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
     module.exports = Type;
