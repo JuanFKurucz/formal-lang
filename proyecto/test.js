@@ -1,6 +1,8 @@
 const assert = require('assert');
 const Type = require("./tyjs.js");
 
+const fullTests = true;
+
 const createInstanceType = (type, overridePredifined = [], customCheckers = []) => {
     const instance = new Type(type, customCheckers);
     overridePredifined.forEach(x => {
@@ -19,24 +21,6 @@ const evaluate = (instance, cases) => {
         });
     });
 }
-
-/*
- ["number", value => typeof(value) === "number"],
-    ["undefined", value => typeof(value) === "undefined"],
-    ["boolean", value => typeof(value) === "boolean"],
-    ["string", value => typeof(value) === "string"],
-    ["function", value => typeof(value) === "function"],
-    ["object", value => typeof(value) === "object"],
-    ["symbol", value => typeof(value) === "symbol"],
-    ["bigint", value => typeof(value) === "bigint"],
-    ["void", value => (value === null || typeof(value) === "undefined")], // typeof(null) = 'object' instead of 'null'
-    ["int", value => (typeof(value) === "number" && Number.isInteger(value))],
-    ["double", value => (typeof(value) === "number" && !Number.isInteger(value))],
-    ["char", value => (typeof(value) === "string" && value.length === 1)],
-    ["byte", value => (typeof(value) === "number" && value >= 0 && value <= 255 && parseInt(value) === value)],
-    ["_", value => true],
-    ["any", value => true],
-*/
 
 const values = {
     "number": [],
@@ -151,26 +135,28 @@ describe('combination', function() {
         evaluate(createInstanceType(this.title), possibleValues);
     });
 
-    // for (let type1 in values) {
-    //     for (let type2 in values) {
-    //         describe(`${type1} | ${type2}`, function() {
-    //             const possibleValues = [];
-    //             for (let e in values[type1]) {
-    //                 const element = values[type1][e];
-    //                 if (!Array.isArray(element) || element[1]) {
-    //                     possibleValues.push([Array.isArray(element) ? element[0] : element, true]);
-    //                 }
-    //             }
-    //             for (let e in values[type2]) {
-    //                 const element = values[type2][e];
-    //                 if (!Array.isArray(element) || element[1]) {
-    //                     possibleValues.push([Array.isArray(element) ? element[0] : element, true]);
-    //                 }
-    //             }
-    //             evaluate(createInstanceType(this.title), possibleValues);
-    //         });
-    //     }
-    // }
+    if (fullTests) {
+        for (let type1 in values) {
+            for (let type2 in values) {
+                describe(`${type1} | ${type2}`, function() {
+                    const possibleValues = [];
+                    for (let e in values[type1]) {
+                        const element = values[type1][e];
+                        if (!Array.isArray(element) || element[1]) {
+                            possibleValues.push([Array.isArray(element) ? element[0] : element, true]);
+                        }
+                    }
+                    for (let e in values[type2]) {
+                        const element = values[type2][e];
+                        if (!Array.isArray(element) || element[1]) {
+                            possibleValues.push([Array.isArray(element) ? element[0] : element, true]);
+                        }
+                    }
+                    evaluate(createInstanceType(this.title), possibleValues);
+                });
+            }
+        }
+    }
 });
 
 describe('values', function() {
@@ -208,14 +194,28 @@ describe('values', function() {
             [2, false],
         ]
     );
-    // evaluate(
-    //     createInstanceType("1.5 | boolean"), [
-    //         [false, true],
-    //         [true, true],
-    //         [NaN, true],
-    //         [2, false],
-    //     ]
-    // );
+    evaluate(
+        createInstanceType("1.5 | boolean"), [
+            [false, true],
+            [true, true],
+            [1.5, true],
+            [2.5, false],
+        ]
+    );
+    evaluate(
+        createInstanceType("NaN"), [
+            [NaN, true],
+            [1.5, false],
+            [2.5, false],
+        ]
+    );
+    evaluate(
+        createInstanceType("NaN | boolean"), [
+            [NaN, true],
+            [5, false],
+            [true, true],
+        ]
+    );
 });
 
 describe('inclusions', function() {

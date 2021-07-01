@@ -193,14 +193,14 @@ values -> values %separator value {% ([values, , value]) => { return [...values,
 values -> value {% ([value]) => { return value; } %}
 value -> %boolean {% ([token]) => [JSON.parse(token.value)] %}
 value -> %string {% ([token]) => [JSON.parse(token.value)] %}
-value -> %number {% ([token]) => [JSON.parse(token.value)] %}
-value -> %integer {% ([token]) => [JSON.parse(token.value)] %}
+value -> %number {% ([token]) => [Number(token.value)] %}
 
 # javascript values (string, boolean or number)
 valueCheck -> %boolean {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
 valueCheck -> %string {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
-valueCheck -> %integer {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
-valueCheck -> %number {% ([token]) => ((value, instance) => (value === JSON.parse(token.value))) %}
+valueCheck -> %number {% ([token]) => ((value, instance) => {
+    return (value == Number(token.value) || (isNaN(value) && isNaN(Number(token.value))));
+}) %}
 
 # /{regexp}/
 regularExpr -> %regexp {% ([regExp]) => ((value, instance) => {
@@ -232,7 +232,9 @@ listValues -> listValues %separator listValue {% ([typeCheckers, , typeChecker])
 } %}
 listValues -> listValue {% ([type]) => type %}
 # [...n * type]
-listValue -> %spread %integer %mult T {% ([ , n, , typeChecker]) => {
+listValue -> %spread %number %mult T {% ([ , n, , typeChecker]) => {
+    n == parseInt(n).toString() || (function() { throw `Invalid spread integer "${n}"` }());
+
     // Just append it n times
     return Array(parseInt(n)).fill({
         checker: typeChecker,
@@ -293,7 +295,9 @@ objectProp -> %spread regularExpr %colon T {% ([, typeChecker1, , typeChecker2])
     }];
 } %}
 # {...n * /re/: type}
-objectProp -> %spread %integer %mult regularExpr %colon T {% ([, n, , typeChecker1, , typeChecker2]) => {
+objectProp -> %spread %number %mult regularExpr %colon T {% ([, n, , typeChecker1, , typeChecker2]) => {
+    n == parseInt(n).toString() || (function() { throw `Invalid spread integer "${n}"` }());
+
     return [{
         checkerPair: [
             typeChecker1,
@@ -305,7 +309,9 @@ objectProp -> %spread %integer %mult regularExpr %colon T {% ([, n, , typeChecke
 } %}
 
 # $n
-customChecker -> %pe %integer {% ([ , index]) => {
+customChecker -> %pe %number {% ([ , index]) => {
+    index == parseInt(index).toString() || (function() { throw `Invalid checker index "${index}"` }());
+
     return ((values, instance) => {
         const customTypeChecker = instance.checkers[parseInt(index)];
         customTypeChecker || (function() { throw `Invalid custom checker index ${index}` }());

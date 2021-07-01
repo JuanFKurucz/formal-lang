@@ -188,12 +188,12 @@ var grammar = {
     {"name": "values", "symbols": ["value"], "postprocess": ([value]) => { return value; }},
     {"name": "value", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([token]) => [JSON.parse(token.value)]},
     {"name": "value", "symbols": [(lexer.has("string") ? {type: "string"} : string)], "postprocess": ([token]) => [JSON.parse(token.value)]},
-    {"name": "value", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([token]) => [JSON.parse(token.value)]},
-    {"name": "value", "symbols": [(lexer.has("integer") ? {type: "integer"} : integer)], "postprocess": ([token]) => [JSON.parse(token.value)]},
+    {"name": "value", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([token]) => [Number(token.value)]},
     {"name": "valueCheck", "symbols": [(lexer.has("boolean") ? {type: "boolean"} : boolean)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
     {"name": "valueCheck", "symbols": [(lexer.has("string") ? {type: "string"} : string)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
-    {"name": "valueCheck", "symbols": [(lexer.has("integer") ? {type: "integer"} : integer)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
-    {"name": "valueCheck", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess": ([token]) => ((value, instance) => (value === JSON.parse(token.value)))},
+    {"name": "valueCheck", "symbols": [(lexer.has("number") ? {type: "number"} : number)], "postprocess":  ([token]) => ((value, instance) => {
+            return (value == Number(token.value) || (isNaN(value) && isNaN(Number(token.value))));
+        }) },
     {"name": "regularExpr", "symbols": [(lexer.has("regexp") ? {type: "regexp"} : regexp)], "postprocess":  ([regExp]) => ((value, instance) => {
             return (new RegExp(regExp.value.slice(1,-1)).test(value.toString()));
         }) },
@@ -208,7 +208,9 @@ var grammar = {
             return [...typeCheckers, ...typeChecker];
         } },
     {"name": "listValues", "symbols": ["listValue"], "postprocess": ([type]) => type},
-    {"name": "listValue", "symbols": [(lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("integer") ? {type: "integer"} : integer), (lexer.has("mult") ? {type: "mult"} : mult), "T"], "postprocess":  ([ , n, , typeChecker]) => {
+    {"name": "listValue", "symbols": [(lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("number") ? {type: "number"} : number), (lexer.has("mult") ? {type: "mult"} : mult), "T"], "postprocess":  ([ , n, , typeChecker]) => {
+            n == parseInt(n).toString() || (function() { throw `Invalid spread integer "${n}"` }());
+        
             // Just append it n times
             return Array(parseInt(n)).fill({
                 checker: typeChecker,
@@ -258,7 +260,9 @@ var grammar = {
                 type: "zeroPlusRegex"
             }];
         } },
-    {"name": "objectProp", "symbols": [(lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("integer") ? {type: "integer"} : integer), (lexer.has("mult") ? {type: "mult"} : mult), "regularExpr", (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess":  ([, n, , typeChecker1, , typeChecker2]) => {
+    {"name": "objectProp", "symbols": [(lexer.has("spread") ? {type: "spread"} : spread), (lexer.has("number") ? {type: "number"} : number), (lexer.has("mult") ? {type: "mult"} : mult), "regularExpr", (lexer.has("colon") ? {type: "colon"} : colon), "T"], "postprocess":  ([, n, , typeChecker1, , typeChecker2]) => {
+            n == parseInt(n).toString() || (function() { throw `Invalid spread integer "${n}"` }());
+        
             return [{
                 checkerPair: [
                     typeChecker1,
@@ -268,7 +272,9 @@ var grammar = {
                 count: parseInt(n)
             }];
         } },
-    {"name": "customChecker", "symbols": [(lexer.has("pe") ? {type: "pe"} : pe), (lexer.has("integer") ? {type: "integer"} : integer)], "postprocess":  ([ , index]) => {
+    {"name": "customChecker", "symbols": [(lexer.has("pe") ? {type: "pe"} : pe), (lexer.has("number") ? {type: "number"} : number)], "postprocess":  ([ , index]) => {
+            index == parseInt(index).toString() || (function() { throw `Invalid checker index "${index}"` }());
+        
             return ((values, instance) => {
                 const customTypeChecker = instance.checkers[parseInt(index)];
                 customTypeChecker || (function() { throw `Invalid custom checker index ${index}` }());

@@ -35,7 +35,6 @@ const lexer = moo.compile({
     gt: />/,
     colon: /:/,
     pe: /\$/,
-    integer: /[0-9]+/,
     number: /NaN|[+-]?Infinity|[+-]?0[xX][0-9a-fA-F]+|[+-]?(?:\d*(?:\d\.?|\.\d)\d*)(?:[eE][-+]?\d+)?/,
     string: /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/,
     identifier: /[a-zA-Z_\$][\w$]*/,
