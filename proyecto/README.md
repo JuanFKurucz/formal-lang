@@ -56,3 +56,9 @@ Recompile grammar:
 ```
 nearleyc grammar.ne > grammar.js
 ```
+
+Run all tests:
+```
+npm test
+```
+
