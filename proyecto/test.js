@@ -1,7 +1,7 @@
 const assert = require('assert');
 const Type = require("./tyjs.js");
 
-const fullTests = true;
+const fullTests = false;
 
 const createInstanceType = (type, overridePredifined = [], customCheckers = []) => {
     const instance = new Type(type, customCheckers);
@@ -33,6 +33,14 @@ const values = {
     "bigint": [BigInt("1")],
     "void": [undefined, null],
     "int": [10, -10, [10.5, false]],
+
+    "int8": [-128,0,127,[-129, false],[128, false],[1.5, false]],
+    "uint8": [[-128,false],0,127,[-1,false],255,[256,false],[-129, false],[1.5, false]],
+    "int16": [-32768,32767, [10.5, false],[-32769,false],[32768,false]],
+    "uint16": [0,65535, [10.5, false],[-1,false],[65536,false]],
+    "int32": [-2147483648,2147483647, [10.5, false],[-2147483649,false],[2147483648,false]],
+    "uint32": [0,4294967295, [10.5, false],[-1,false],[4294967296,false]],
+
     "double": [
         [10, false],
         10.5,
@@ -58,10 +66,10 @@ const values = {
 
 //create number
 for (let key in values) {
-    if (key === "number") {
+    if (key == "number") {
         continue;
     }
-    if (["int", "double", "byte"].indexOf(key) !== -1) {
+    if (["int", "double", "byte","int8","uint8","int16","uint16","int32","uint32"].indexOf(key) !== -1) {
         for (let e in values[key]) {
             const element = values[key][e];
             if (!Array.isArray(element) || element[1]) {

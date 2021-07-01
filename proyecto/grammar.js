@@ -5,6 +5,19 @@ function id(x) { return x[0]; }
 
 const lexer = require("./lexer.js");
 
+const checkJavaScriptArrayTypes = (arrayType, value,substring=[]) => {
+    try{
+        const jsArray = new arrayType(1);
+        jsArray[0]=value;
+        if (substring.length){
+            return value.toString() == jsArray[0].toString().substring(substring[0],substring[1]);
+        }
+        return value.toString() == jsArray[0].toString();
+    } catch(e){
+        return false;
+    }
+}
+
 const atomCheckers = new Map([
     ["number", (value, instance) => {
         return (typeof(value) === "number");
@@ -25,6 +38,12 @@ const atomCheckers = new Map([
     ["double", (value, instance) => (typeof(value) === "number" && !Number.isInteger(value))],
     ["char", (value, instance) => (typeof(value) === "string" && value.length === 1)],
     ["byte", (value, instance) => (typeof(value) === "number" && value >= 0 && value <= 255 && parseInt(value) === value)],
+    ["int8", (value, instance) => typeof(value) === "number" && value>=-128 && value<=127 && parseInt(value) === value],
+    ["uint8", (value, instance) => typeof(value) === "number" && value>=0 && value<=255 && parseInt(value) === value],
+    ["int16", (value, instance) => typeof(value) === "number" && value>=-32768 && value<=32767 && parseInt(value) === value],
+    ["uint16", (value, instance) => typeof(value) === "number" && value>=0 && value<=65535 && parseInt(value) === value],
+    ["int32", (value, instance) => typeof(value) === "number" && value>=-2147483648 && value<=2147483647 && parseInt(value) === value],
+    ["uint32", (value, instance) => typeof(value) === "number" && value>=0 && value<=4294967295 && parseInt(value) === value],
     ["_", (value, instance) => true],
     ["any", (value, instance) => true],
 ]);
@@ -177,6 +196,15 @@ var grammar = {
     {"name": "atom", "symbols": [(lexer.has("bigint") ? {type: "bigint"} : bigint)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("xvoid") ? {type: "xvoid"} : xvoid)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("int") ? {type: "int"} : int)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("int8") ? {type: "int8"} : int8)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("uint8") ? {type: "uint8"} : uint8)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("int16") ? {type: "int16"} : int16)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("uint16") ? {type: "uint16"} : uint16)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("int32") ? {type: "int32"} : int32)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("uint32") ? {type: "uint32"} : uint32)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("float32") ? {type: "float32"} : float32)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("bigint64") ? {type: "bigint64"} : bigint64)], "postprocess": ([type]) => atomChecker(type.value)},
+    {"name": "atom", "symbols": [(lexer.has("biguint64") ? {type: "biguint64"} : biguint64)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("double") ? {type: "double"} : double)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("char") ? {type: "char"} : char)], "postprocess": ([type]) => atomChecker(type.value)},
     {"name": "atom", "symbols": [(lexer.has("byte") ? {type: "byte"} : byte)], "postprocess": ([type]) => atomChecker(type.value)},

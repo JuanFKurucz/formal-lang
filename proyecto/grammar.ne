@@ -21,6 +21,12 @@ const atomCheckers = new Map([
     ["double", (value, instance) => (typeof(value) === "number" && !Number.isInteger(value))],
     ["char", (value, instance) => (typeof(value) === "string" && value.length === 1)],
     ["byte", (value, instance) => (typeof(value) === "number" && value >= 0 && value <= 255 && parseInt(value) === value)],
+    ["int8", (value, instance) => typeof(value) === "number" && value>=-128 && value<=127 && parseInt(value) === value],
+    ["uint8", (value, instance) => typeof(value) === "number" && value>=0 && value<=255 && parseInt(value) === value],
+    ["int16", (value, instance) => typeof(value) === "number" && value>=-32768 && value<=32767 && parseInt(value) === value],
+    ["uint16", (value, instance) => typeof(value) === "number" && value>=0 && value<=65535 && parseInt(value) === value],
+    ["int32", (value, instance) => typeof(value) === "number" && value>=-2147483648 && value<=2147483647 && parseInt(value) === value],
+    ["uint32", (value, instance) => typeof(value) === "number" && value>=0 && value<=4294967295 && parseInt(value) === value],
     ["_", (value, instance) => true],
     ["any", (value, instance) => true],
 ]);
@@ -179,6 +185,15 @@ atom -> %symbol {% ([type]) => atomChecker(type.value) %}
 atom -> %bigint {% ([type]) => atomChecker(type.value) %}
 atom -> %xvoid {% ([type]) => atomChecker(type.value) %}
 atom -> %int {% ([type]) => atomChecker(type.value) %}
+atom -> %int8 {% ([type]) => atomChecker(type.value) %}
+atom -> %uint8 {% ([type]) => atomChecker(type.value) %}
+atom -> %int16 {% ([type]) => atomChecker(type.value) %}
+atom -> %uint16 {% ([type]) => atomChecker(type.value) %}
+atom -> %int32 {% ([type]) => atomChecker(type.value) %}
+atom -> %uint32 {% ([type]) => atomChecker(type.value) %}
+atom -> %float32 {% ([type]) => atomChecker(type.value) %}
+atom -> %bigint64 {% ([type]) => atomChecker(type.value) %}
+atom -> %biguint64 {% ([type]) => atomChecker(type.value) %}
 atom -> %double {% ([type]) => atomChecker(type.value) %}
 atom -> %char {% ([type]) => atomChecker(type.value) %}
 atom -> %byte {% ([type]) => atomChecker(type.value) %}
